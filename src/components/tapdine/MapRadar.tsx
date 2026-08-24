@@ -96,9 +96,12 @@ export default function MapRadar({
                 <span className="max-w-[9rem] truncate text-[11px] font-semibold text-foreground">
                   {venue.name}
                 </span>
-                {price != null && (
-                  <span className="text-[11px] font-semibold text-gold">{formatPrice(price)}</span>
+                {headline && (
+                  <span className="max-w-[8rem] truncate text-[11px] font-semibold text-gold">
+                    {headline}
+                  </span>
                 )}
+
               </button>
             </AdvancedMarker>
           );
