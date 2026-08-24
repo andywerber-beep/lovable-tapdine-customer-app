@@ -135,19 +135,35 @@ function VenuePage() {
                 className="overflow-hidden rounded-3xl border border-border bg-surface"
                 style={{ boxShadow: "var(--shadow-lift)" }}
               >
+                {offer.image_url && (
+                  <img
+                    src={offer.image_url}
+                    alt={offer.title}
+                    loading="lazy"
+                    className="h-44 w-full object-cover"
+                  />
+                )}
                 <div className="p-5">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-live/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-live">
-                    <Clock3 className="size-3" /> Live now
+                    <Clock3 className="size-3" /> {offer.discount_type || "Live now"}
                   </span>
-                  <h3 className="mt-3 font-display text-xl font-semibold">{offer.title}</h3>
-                  {offer.details && (
+                  <div className="mt-3 flex items-start justify-between gap-4">
+                    <h3 className="font-display text-xl font-semibold">{offer.title}</h3>
+                    {formatPrice(offer.discount_price) && (
+                      <span className="shrink-0 font-display text-xl font-semibold text-gradient-ember">
+                        {formatPrice(offer.discount_price)}
+                      </span>
+                    )}
+                  </div>
+                  {offer.description && (
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                      {offer.details}
+                      {offer.description}
                     </p>
                   )}
                 </div>
               </li>
             ))}
+
           </ul>
         )}
       </section>
