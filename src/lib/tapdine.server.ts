@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import type { Offer, Venue } from "./tapdine-types";
+import { venueAddress } from "./tapdine-types";
 
 const VENUE_COLUMNS = `
   id,
@@ -10,20 +11,17 @@ const VENUE_COLUMNS = `
   town,
   postcode,
   address1,
-  website_url,
-  latitude,
-  longitude
+  address2,
+  tel_number
 `;
 
 const OFFER_COLUMNS = `
   id,
   title,
-  description,
-  discount_price,
-  image_url,
-  proximity_ping,
+  details,
   is_active,
-  created_at
+  created_at,
+  venue_id
 `;
 
 function client(): SupabaseClient {
@@ -37,7 +35,6 @@ function client(): SupabaseClient {
   const url = rawUrl.trim().replace(/\/+$/, "").replace(/\/rest\/v1$/, "");
 
   return createClient(url, key, {
-
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (input, init) => {
@@ -52,32 +49,80 @@ function client(): SupabaseClient {
   });
 }
 
-function normalizeOffers(raw: unknown): Offer[] {
-  if (!raw) return [];
-  const list = Array.isArray(raw) ? raw : [raw];
-  return list.filter(Boolean) as Offer[];
+type VenueRow = Omit<Venue, "offers" | "latitude" | "longitude">;
+type OfferRow = Offer & { venue_id: string };
+
+/** Postcode/address -> coordinates, cached for the lifetime of the worker. */
+const geocodeCache = new Map<string, { latitude: number; longitude: number } | null>();
+
+async function geocode(address: string) {
+  if (!address) return null;
+  if (geocodeCache.has(address)) return geocodeCache.get(address) ?? null;
+
+  const key = process.env["GOOGLE_MAPS_API_KEY"];
+  if (!key) return null;
+
+  try {
+    const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+    url.searchParams.set("address", address);
+    url.searchParams.set("region", "uk");
+    url.searchParams.set("key", key);
+
+    const res = await fetch(url);
+    const json = (await res.json()) as {
+      results?: { geometry?: { location?: { lat: number; lng: number } } }[];
+    };
+    const loc = json.results?.[0]?.geometry?.location;
+    const coords = loc ? { latitude: loc.lat, longitude: loc.lng } : null;
+    geocodeCache.set(address, coords);
+    return coords;
+  } catch {
+    geocodeCache.set(address, null);
+    return null;
+  }
 }
 
-function normalizeVenue(row: Record<string, unknown>): Venue {
-  const { offers, ...rest } = row as unknown as Venue & { offers?: unknown };
-  return { ...(rest as Omit<Venue, "offers">), offers: normalizeOffers(offers) };
+async function withCoords(row: VenueRow, offers: Offer[]): Promise<Venue> {
+  const base: Venue = { ...row, latitude: null, longitude: null, offers };
+  const coords = await geocode(venueAddress(base));
+  return coords ? { ...base, ...coords } : base;
 }
 
 export async function fetchVenues(): Promise<Venue[]> {
-  const { data, error } = await client()
-    .from("partners")
-    .select(`${VENUE_COLUMNS}, offers (${OFFER_COLUMNS})`)
-    .in("status", ["active", "Active", "ACTIVE"]);
+  const supabase = client();
+
+  const [{ data: venueRows, error }, { data: offerRows, error: offerError }] = await Promise.all([
+    supabase
+      .from("venues")
+      .select(VENUE_COLUMNS)
+      .in("status", ["active", "Active", "ACTIVE"])
+      .order("name"),
+    supabase.from("offers").select(OFFER_COLUMNS),
+  ]);
 
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => normalizeVenue(row as Record<string, unknown>));
+  if (offerError) throw new Error(offerError.message);
+
+  const byVenue = new Map<string, Offer[]>();
+  for (const row of (offerRows ?? []) as unknown as OfferRow[]) {
+    const { venue_id, ...offer } = row;
+    const list = byVenue.get(venue_id) ?? [];
+    list.push(offer);
+    byVenue.set(venue_id, list);
+  }
+
+  return Promise.all(
+    ((venueRows ?? []) as unknown as VenueRow[]).map((row) =>
+      withCoords(row, byVenue.get(row.id) ?? []),
+    ),
+  );
 }
 
 export async function fetchVenue(id: string): Promise<Venue | null> {
   const supabase = client();
 
   const { data, error } = await supabase
-    .from("partners")
+    .from("venues")
     .select(VENUE_COLUMNS)
     .eq("id", id)
     .maybeSingle();
@@ -88,9 +133,11 @@ export async function fetchVenue(id: string): Promise<Venue | null> {
   const { data: offerRows, error: offerError } = await supabase
     .from("offers")
     .select(OFFER_COLUMNS)
-    .eq("venue_id", id);
+    .eq("venue_id", id)
+    .order("created_at", { ascending: false });
 
   if (offerError) throw new Error(offerError.message);
 
-  return normalizeVenue({ ...(data as Record<string, unknown>), offers: offerRows });
+  const offers = ((offerRows ?? []) as unknown as OfferRow[]).map(({ venue_id: _v, ...rest }) => rest);
+  return withCoords(data as unknown as VenueRow, offers);
 }
