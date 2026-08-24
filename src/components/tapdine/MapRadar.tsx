@@ -43,8 +43,8 @@ export default function MapRadar({
         className="size-full"
         defaultCenter={center}
         defaultZoom={15}
-        mapId={DARK_MAP_ID}
-        colorScheme="DARK"
+        mapId={MAP_ID}
+        colorScheme="LIGHT"
         gestureHandling="greedy"
         disableDefaultUI
         clickableIcons={false}
