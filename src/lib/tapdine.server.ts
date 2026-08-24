@@ -55,7 +55,7 @@ function normalizeOffers(raw: unknown): Offer[] {
 }
 
 function normalizeVenue(row: Record<string, unknown>): Venue {
-  const { offers, ...rest } = row as Venue & { offers?: unknown };
+  const { offers, ...rest } = row as unknown as Venue & { offers?: unknown };
   return { ...(rest as Omit<Venue, "offers">), offers: normalizeOffers(offers) };
 }
 
