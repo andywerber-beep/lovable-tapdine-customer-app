@@ -12,14 +12,23 @@ const VENUE_COLUMNS = `
   postcode,
   address1,
   address2,
-  tel_number
+  tel_number,
+  website_url,
+  proximity_ping_enabled,
+  latitude,
+  longitude
 `;
 
 const OFFER_COLUMNS = `
   id,
   title,
-  details,
+  description,
+  discount_type,
+  discount_price,
+  image_url,
   is_active,
+  proximity_ping,
+  expires_at,
   created_at,
   venue_id
 `;
@@ -49,10 +58,10 @@ function client(): SupabaseClient {
   });
 }
 
-type VenueRow = Omit<Venue, "offers" | "latitude" | "longitude">;
+type VenueRow = Omit<Venue, "offers">;
 type OfferRow = Offer & { venue_id: string };
 
-/** Postcode/address -> coordinates, cached for the lifetime of the worker. */
+/** Address -> coordinates fallback for partners with no stored lat/lng. */
 const geocodeCache = new Map<string, { latitude: number; longitude: number } | null>();
 
 async function geocode(address: string) {
@@ -83,9 +92,21 @@ async function geocode(address: string) {
 }
 
 async function withCoords(row: VenueRow, offers: Offer[]): Promise<Venue> {
-  const base: Venue = { ...row, latitude: null, longitude: null, offers };
+  const base: Venue = { ...row, offers };
+  if (base.latitude != null && base.longitude != null) return base;
   const coords = await geocode(venueAddress(base));
   return coords ? { ...base, ...coords } : base;
+}
+
+function splitOffers(rows: OfferRow[]) {
+  const byVenue = new Map<string, Offer[]>();
+  for (const row of rows) {
+    const { venue_id, ...offer } = row;
+    const list = byVenue.get(venue_id) ?? [];
+    list.push(offer);
+    byVenue.set(venue_id, list);
+  }
+  return byVenue;
 }
 
 export async function fetchVenues(): Promise<Venue[]> {
@@ -93,7 +114,7 @@ export async function fetchVenues(): Promise<Venue[]> {
 
   const [{ data: venueRows, error }, { data: offerRows, error: offerError }] = await Promise.all([
     supabase
-      .from("venues")
+      .from("partners")
       .select(VENUE_COLUMNS)
       .in("status", ["active", "Active", "ACTIVE"])
       .order("name"),
@@ -103,13 +124,7 @@ export async function fetchVenues(): Promise<Venue[]> {
   if (error) throw new Error(error.message);
   if (offerError) throw new Error(offerError.message);
 
-  const byVenue = new Map<string, Offer[]>();
-  for (const row of (offerRows ?? []) as unknown as OfferRow[]) {
-    const { venue_id, ...offer } = row;
-    const list = byVenue.get(venue_id) ?? [];
-    list.push(offer);
-    byVenue.set(venue_id, list);
-  }
+  const byVenue = splitOffers((offerRows ?? []) as unknown as OfferRow[]);
 
   return Promise.all(
     ((venueRows ?? []) as unknown as VenueRow[]).map((row) =>
@@ -122,7 +137,7 @@ export async function fetchVenue(id: string): Promise<Venue | null> {
   const supabase = client();
 
   const { data, error } = await supabase
-    .from("venues")
+    .from("partners")
     .select(VENUE_COLUMNS)
     .eq("id", id)
     .maybeSingle();
@@ -138,6 +153,8 @@ export async function fetchVenue(id: string): Promise<Venue | null> {
 
   if (offerError) throw new Error(offerError.message);
 
-  const offers = ((offerRows ?? []) as unknown as OfferRow[]).map(({ venue_id: _v, ...rest }) => rest);
+  const offers = ((offerRows ?? []) as unknown as OfferRow[]).map(
+    ({ venue_id: _v, ...rest }) => rest,
+  );
   return withCoords(data as unknown as VenueRow, offers);
 }
