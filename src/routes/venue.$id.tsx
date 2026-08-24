@@ -3,7 +3,7 @@ import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Clock3, MapPin, Phone, Utensils } from "lucide-react";
 
 import { getVenue } from "@/lib/tapdine.functions";
-import { activeOffers, venueAddress, type Venue } from "@/lib/tapdine-types";
+import { activeOffers, formatPrice, venueAddress, type Venue } from "@/lib/tapdine-types";
 
 
 const venueQuery = (id: string) =>
