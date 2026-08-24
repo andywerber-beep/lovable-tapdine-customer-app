@@ -27,13 +27,17 @@ const OFFER_COLUMNS = `
 `;
 
 function client(): SupabaseClient {
-  const url = process.env["TAPDINE_SUPABASE_URL"];
+  const rawUrl = process.env["TAPDINE_SUPABASE_URL"];
   const key = process.env["TAPDINE_SUPABASE_PUBLISHABLE_KEY"];
-  if (!url || !key) {
+  if (!rawUrl || !key) {
     throw new Error("TapDine database credentials are not configured.");
   }
 
+  // Accept values pasted with a trailing /rest/v1 path.
+  const url = rawUrl.trim().replace(/\/+$/, "").replace(/\/rest\/v1$/, "");
+
   return createClient(url, key, {
+
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (input, init) => {
