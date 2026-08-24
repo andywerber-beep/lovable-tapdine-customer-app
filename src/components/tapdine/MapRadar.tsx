@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { activeOffers, type Venue } from "@/lib/tapdine-types";
 import type { Coords } from "@/hooks/useGeolocation";
 
-const DARK_MAP_ID = "DEMO_MAP_ID";
+const MAP_ID = "DEMO_MAP_ID";
 
 const FALLBACK_CENTER = { lat: 51.5074, lng: -0.1278 };
 
