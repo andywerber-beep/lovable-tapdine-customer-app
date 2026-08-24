@@ -1,9 +1,10 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { ArrowLeft, ArrowUpRight, Clock3, MapPin, Utensils } from "lucide-react";
+import { ArrowLeft, Clock3, MapPin, Phone, Utensils } from "lucide-react";
 
 import { getVenue } from "@/lib/tapdine.functions";
-import { activeOffers, formatPrice, type Venue } from "@/lib/tapdine-types";
+import { activeOffers, venueAddress, type Venue } from "@/lib/tapdine-types";
+
 
 const venueQuery = (id: string) =>
   queryOptions({
