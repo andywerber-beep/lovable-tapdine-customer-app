@@ -64,7 +64,7 @@ export default function MapRadar({
           if (venue.latitude == null || venue.longitude == null) return null;
           const offers = activeOffers(venue);
           const live = offers.length > 0;
-          const price = bestPrice(venue);
+          const headline = offers[0]?.title ?? null;
           const isSelected = selectedVenue?.id === venue.id;
 
           return (
