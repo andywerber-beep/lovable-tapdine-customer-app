@@ -1,7 +1,7 @@
 import { AdvancedMarker, APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { useEffect } from "react";
 
-import { activeOffers, bestPrice, formatPrice, type Venue } from "@/lib/tapdine-types";
+import { activeOffers, type Venue } from "@/lib/tapdine-types";
 import type { Coords } from "@/hooks/useGeolocation";
 
 const DARK_MAP_ID = "DEMO_MAP_ID";
