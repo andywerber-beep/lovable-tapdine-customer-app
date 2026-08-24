@@ -1,8 +1,13 @@
 export interface Offer {
   id: number;
   title: string;
-  details: string | null;
+  description: string | null;
+  discount_type: string | null;
+  discount_price: number | null;
+  image_url: string | null;
   is_active: boolean | null;
+  proximity_ping: boolean | null;
+  expires_at: string | null;
   created_at: string | null;
 }
 
@@ -16,13 +21,22 @@ export interface Venue {
   address1: string | null;
   address2: string | null;
   tel_number: string | null;
+  website_url: string | null;
+  proximity_ping_enabled: boolean | null;
   latitude: number | null;
   longitude: number | null;
   offers: Offer[];
 }
 
+/** Offers that are switched on and not past their expiry. */
 export function activeOffers(venue: Venue): Offer[] {
-  return venue.offers.filter((offer) => offer.is_active !== false);
+  const now = Date.now();
+  return venue.offers.filter((offer) => {
+    if (offer.is_active !== true) return false;
+    if (!offer.expires_at) return true;
+    const expiry = Date.parse(offer.expires_at);
+    return Number.isNaN(expiry) || expiry > now;
+  });
 }
 
 export function venueAddress(venue: Venue): string {
@@ -32,6 +46,10 @@ export function venueAddress(venue: Venue): string {
     .join(", ");
 }
 
+export function formatPrice(value: number | null): string | null {
+  if (value == null) return null;
+  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(value);
+}
 
 /** Haversine-lite distance in km (equirectangular approximation). */
 export function distanceKm(
