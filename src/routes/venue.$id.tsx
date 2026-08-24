@@ -149,11 +149,6 @@ function VenuePage() {
             ))}
           </ul>
         )}
-
-              </li>
-            ))}
-          </ul>
-        )}
       </section>
     </Shell>
   );
