@@ -1,10 +1,7 @@
 export interface Offer {
   id: number;
   title: string;
-  description: string | null;
-  discount_price: number | null;
-  image_url: string | null;
-  proximity_ping: boolean | null;
+  details: string | null;
   is_active: boolean | null;
   created_at: string | null;
 }
@@ -17,7 +14,8 @@ export interface Venue {
   town: string | null;
   postcode: string | null;
   address1: string | null;
-  website_url: string | null;
+  address2: string | null;
+  tel_number: string | null;
   latitude: number | null;
   longitude: number | null;
   offers: Offer[];
@@ -27,16 +25,13 @@ export function activeOffers(venue: Venue): Offer[] {
   return venue.offers.filter((offer) => offer.is_active !== false);
 }
 
-export function bestPrice(venue: Venue): number | null {
-  const prices = activeOffers(venue)
-    .map((o) => o.discount_price)
-    .filter((p): p is number => typeof p === "number");
-  return prices.length ? Math.min(...prices) : null;
+export function venueAddress(venue: Venue): string {
+  return [venue.address1, venue.address2, venue.town, venue.postcode]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(", ");
 }
 
-export function formatPrice(pence: number): string {
-  return `£${pence.toFixed(2)}`;
-}
 
 /** Haversine-lite distance in km (equirectangular approximation). */
 export function distanceKm(

@@ -1,7 +1,7 @@
 import { AdvancedMarker, APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { useEffect } from "react";
 
-import { activeOffers, bestPrice, formatPrice, type Venue } from "@/lib/tapdine-types";
+import { activeOffers, type Venue } from "@/lib/tapdine-types";
 import type { Coords } from "@/hooks/useGeolocation";
 
 const DARK_MAP_ID = "DEMO_MAP_ID";
@@ -64,7 +64,7 @@ export default function MapRadar({
           if (venue.latitude == null || venue.longitude == null) return null;
           const offers = activeOffers(venue);
           const live = offers.length > 0;
-          const price = bestPrice(venue);
+          const headline = offers[0]?.title ?? null;
           const isSelected = selectedVenue?.id === venue.id;
 
           return (
@@ -96,9 +96,12 @@ export default function MapRadar({
                 <span className="max-w-[9rem] truncate text-[11px] font-semibold text-foreground">
                   {venue.name}
                 </span>
-                {price != null && (
-                  <span className="text-[11px] font-semibold text-gold">{formatPrice(price)}</span>
+                {headline && (
+                  <span className="max-w-[8rem] truncate text-[11px] font-semibold text-gold">
+                    {headline}
+                  </span>
                 )}
+
               </button>
             </AdvancedMarker>
           );

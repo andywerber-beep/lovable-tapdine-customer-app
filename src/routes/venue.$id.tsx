@@ -1,9 +1,10 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { ArrowLeft, ArrowUpRight, Clock3, MapPin, Utensils } from "lucide-react";
+import { ArrowLeft, Clock3, MapPin, Phone, Utensils } from "lucide-react";
 
 import { getVenue } from "@/lib/tapdine.functions";
-import { activeOffers, formatPrice, type Venue } from "@/lib/tapdine-types";
+import { activeOffers, venueAddress, type Venue } from "@/lib/tapdine-types";
+
 
 const venueQuery = (id: string) =>
   queryOptions({
@@ -100,20 +101,17 @@ function VenuePage() {
         <h1 className="mt-2 font-display text-4xl font-semibold leading-[1.05]">{venue.name}</h1>
         <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
           <MapPin className="mt-0.5 size-4 shrink-0" />
-          {[venue.address1, venue.town, venue.postcode].filter(Boolean).join(", ") ||
-            "Address coming soon"}
+          {venueAddress(venue) || "Address coming soon"}
         </p>
       </header>
 
-      {venue.website_url && (
+      {venue.tel_number && (
         <a
-          href={venue.website_url}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`tel:${venue.tel_number.replace(/\s+/g, "")}`}
           className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4 transition-colors hover:bg-surface-raised"
         >
-          <span className="font-semibold">Book a table direct</span>
-          <ArrowUpRight className="size-4 text-ember" />
+          <span className="font-semibold">Call to book · {venue.tel_number}</span>
+          <Phone className="size-4 text-ember" />
         </a>
       )}
 
@@ -137,27 +135,14 @@ function VenuePage() {
                 className="overflow-hidden rounded-3xl border border-border bg-surface"
                 style={{ boxShadow: "var(--shadow-lift)" }}
               >
-                {offer.image_url && (
-                  <img
-                    src={offer.image_url}
-                    alt={offer.title}
-                    loading="lazy"
-                    className="h-44 w-full object-cover"
-                  />
-                )}
                 <div className="p-5">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-live/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-live">
-                    <Clock3 className="size-3" /> Active 24 hours
+                    <Clock3 className="size-3" /> Live now
                   </span>
                   <h3 className="mt-3 font-display text-xl font-semibold">{offer.title}</h3>
-                  {offer.description && (
+                  {offer.details && (
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                      {offer.description}
-                    </p>
-                  )}
-                  {offer.discount_price != null && (
-                    <p className="mt-4 font-display text-2xl font-semibold text-gradient-ember">
-                      {formatPrice(offer.discount_price)}
+                      {offer.details}
                     </p>
                   )}
                 </div>
