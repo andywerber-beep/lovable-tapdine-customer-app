@@ -131,12 +131,24 @@ function splitOffers(rows: OfferRow[]) {
 export async function fetchVenues(): Promise<Venue[]> {
   const supabase = client();
 
+  async function selectVenues() {
+    const run = () =>
+      supabase
+        .from("partners")
+        .select(venueColumns())
+        .in("status", ["active", "Active", "ACTIVE"])
+        .order("name");
+
+    const first = await run();
+    if (isMissingColumn(first.error) && hasFsaColumns) {
+      hasFsaColumns = false;
+      return run();
+    }
+    return first;
+  }
+
   const [{ data: venueRows, error }, { data: offerRows, error: offerError }] = await Promise.all([
-    supabase
-      .from("partners")
-      .select(VENUE_COLUMNS)
-      .in("status", ["active", "Active", "ACTIVE"])
-      .order("name"),
+    selectVenues(),
     supabase.from("offers").select(OFFER_COLUMNS),
   ]);
 
@@ -155,14 +167,18 @@ export async function fetchVenues(): Promise<Venue[]> {
 export async function fetchVenue(id: string): Promise<Venue | null> {
   const supabase = client();
 
-  const { data, error } = await supabase
-    .from("partners")
-    .select(VENUE_COLUMNS)
-    .eq("id", id)
-    .maybeSingle();
+  const run = () =>
+    supabase.from("partners").select(venueColumns()).eq("id", id).maybeSingle();
+
+  let { data, error } = await run();
+  if (isMissingColumn(error) && hasFsaColumns) {
+    hasFsaColumns = false;
+    ({ data, error } = await run());
+  }
 
   if (error) throw new Error(error.message);
   if (!data) return null;
+
 
   const { data: offerRows, error: offerError } = await supabase
     .from("offers")
