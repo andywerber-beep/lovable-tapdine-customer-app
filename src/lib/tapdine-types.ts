@@ -25,10 +25,9 @@ export interface Venue {
   proximity_ping_enabled: boolean | null;
   latitude: number | null;
   longitude: number | null;
-  coords?: unknown;
   /** Raw FSA value: "0".."5" (FHRS) or "Pass"/"Improvement Required" (FHIS, Scotland). */
-  fsa_rating?: string | null;
-  fsa_rating_date?: string | null;
+  fsa_rating: string | null;
+  fsa_rating_date: string | null;
   offers: Offer[];
 }
 

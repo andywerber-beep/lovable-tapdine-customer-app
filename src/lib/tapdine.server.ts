@@ -221,38 +221,37 @@ function parseCoords(value: unknown) {
 
 function normalizeOffer(row: Row): Offer {
   return {
-    id: nullableString(row.id) ?? "offer",
-    title: nullableString(row.title) ?? "Offer",
-    description: nullableString(row.description),
-    discount_type: nullableString(row.discount_type),
-    discount_price: nullableNumber(row.discount_price),
-    image_url: nullableString(row.image_url),
-    is_active: nullableBoolean(row.is_active),
-    proximity_ping: nullableBoolean(row.proximity_ping),
-    expires_at: nullableString(row.expires_at),
-    created_at: nullableString(row.created_at),
+    id: nullableString(row["id"]) ?? "offer",
+    title: nullableString(row["title"]) ?? "Offer",
+    description: nullableString(row["description"]),
+    discount_type: nullableString(row["discount_type"]),
+    discount_price: nullableNumber(row["discount_price"]),
+    image_url: nullableString(row["image_url"]),
+    is_active: nullableBoolean(row["is_active"]),
+    proximity_ping: nullableBoolean(row["proximity_ping"]),
+    expires_at: nullableString(row["expires_at"]),
+    created_at: nullableString(row["created_at"]),
   };
 }
 
 function normalizeVenue(row: Row, offers: Offer[]): Venue {
-  const parsedCoords = parseCoords(row.coords);
+  const parsedCoords = parseCoords(row["coords"]);
   return {
-    id: String(row.id),
-    name: nullableString(row.name) ?? "TapDine partner",
-    cuisine_type: nullableString(row.cuisine_type),
-    status: nullableString(row.status),
-    town: nullableString(row.town),
-    postcode: nullableString(row.postcode),
-    address1: nullableString(row.address1),
-    address2: nullableString(row.address2),
-    tel_number: nullableString(row.tel_number),
-    website_url: nullableString(row.website_url),
-    proximity_ping_enabled: nullableBoolean(row.proximity_ping_enabled),
-    latitude: nullableNumber(row.latitude) ?? parsedCoords?.latitude ?? null,
-    longitude: nullableNumber(row.longitude) ?? parsedCoords?.longitude ?? null,
-    coords: row.coords,
-    fsa_rating: nullableString(row.fsa_rating),
-    fsa_rating_date: nullableString(row.fsa_rating_date),
+    id: String(row["id"]),
+    name: nullableString(row["name"]) ?? "TapDine partner",
+    cuisine_type: nullableString(row["cuisine_type"]),
+    status: nullableString(row["status"]),
+    town: nullableString(row["town"]),
+    postcode: nullableString(row["postcode"]),
+    address1: nullableString(row["address1"]),
+    address2: nullableString(row["address2"]),
+    tel_number: nullableString(row["tel_number"]),
+    website_url: nullableString(row["website_url"]),
+    proximity_ping_enabled: nullableBoolean(row["proximity_ping_enabled"]),
+    latitude: nullableNumber(row["latitude"]) ?? parsedCoords?.latitude ?? null,
+    longitude: nullableNumber(row["longitude"]) ?? parsedCoords?.longitude ?? null,
+    fsa_rating: nullableString(row["fsa_rating"]),
+    fsa_rating_date: nullableString(row["fsa_rating_date"]),
     offers,
   };
 }
@@ -267,7 +266,7 @@ async function withCoords(venue: Venue): Promise<Venue> {
 function splitOffers(rows: Row[]) {
   const byVenue = new Map<string, Offer[]>();
   for (const row of rows) {
-    const venueId = nullableString(row.venue_id);
+    const venueId = nullableString(row["venue_id"]);
     if (!venueId) continue;
     const list = byVenue.get(venueId) ?? [];
     list.push(normalizeOffer(row));
@@ -322,7 +321,7 @@ export async function fetchVenues(): Promise<Venue[]> {
 
   return Promise.all(
     ((venueRows ?? []) as Row[]).map((row) =>
-      withCoords(normalizeVenue(row, byVenue.get(String(row.id)) ?? [])),
+      withCoords(normalizeVenue(row, byVenue.get(String(row["id"])) ?? [])),
     ),
   );
 }
