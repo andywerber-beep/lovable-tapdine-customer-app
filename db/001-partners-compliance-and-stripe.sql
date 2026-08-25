@@ -2,8 +2,8 @@
 -- Run this in the Supabase SQL Editor.
 -- Adds: Stripe Connect fields, FSA hygiene rating cache, insurance review fields,
 --       user_roles table + has_role() security definer, and the live_partners view.
--- NOTE: partners already has a `user_id` column (uuid, currently null) — that is the
---       ownership link; we add a FK + index on it instead of a new owner_id.
+-- NOTE: partners already has a `user_id` column. If it was originally created as
+--       text, section 4 safely converts it to uuid before adding the auth FK.
 
 -- ---------------------------------------------------------------
 -- 1. Stripe Connect on partners
@@ -60,7 +60,40 @@ comment on column public.partners.insurance_doc_path is
 -- ---------------------------------------------------------------
 -- 4. Ownership: link existing user_id to auth.users
 --    partners.id is int8, so user_id is the separate uuid ownership column.
+--    Empty / invalid / orphaned user_id values are set to null so the FK can be added.
 -- ---------------------------------------------------------------
+do $$ begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'partners'
+      and column_name = 'user_id'
+      and data_type <> 'uuid'
+  ) then
+    alter table public.partners
+      alter column user_id drop default,
+      alter column user_id type uuid using (
+        case
+          when user_id is null then null
+          when btrim(user_id::text) = '' then null
+          when user_id::text ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+            then user_id::uuid
+          else null
+        end
+      );
+  end if;
+end $$;
+
+update public.partners p
+set user_id = null
+where p.user_id is not null
+  and not exists (
+    select 1
+    from auth.users u
+    where u.id = p.user_id
+  );
+
 do $$ begin
   alter table public.partners
     add constraint partners_user_id_fkey
