@@ -1,27 +1,27 @@
--- TapDine — schema additions agreed 2026-08-25
--- Run this against the TapDine Supabase project (SQL Editor).
--- Adds: Stripe Connect fields, FSA hygiene rating cache, auth ownership, roles.
+-- TapDine — schema additions (verified against live DB 2026-08-25)
+-- Run this in the Supabase SQL Editor.
+-- Adds: Stripe Connect fields, FSA hygiene rating cache, insurance review fields,
+--       user_roles table + has_role() security definer, and the live_partners view.
+-- NOTE: partners already has a `user_id` column (uuid, currently null) — that is the
+--       ownership link; we add a FK + index on it instead of a new owner_id.
 
 -- ---------------------------------------------------------------
 -- 1. Stripe Connect on partners
 -- ---------------------------------------------------------------
 alter table public.partners
-  add column if not exists stripe_account_id      text,
-  add column if not exists stripe_charges_enabled boolean not null default false,
-  add column if not exists stripe_payouts_enabled boolean not null default false,
-  add column if not exists stripe_onboarded_at    timestamptz;
+  add column if not exists stripe_account_id       text,
+  add column if not exists stripe_charges_enabled  boolean not null default false,
+  add column if not exists stripe_payouts_enabled   boolean not null default false,
+  add column if not exists stripe_onboarded_at      timestamptz;
 
 comment on column public.partners.stripe_account_id is
   'Stripe Connect account. Onboarding verifies legal entity + bank, replacing manual ID checks.';
-
--- id_provided is now redundant (Stripe Connect covers identity verification).
 comment on column public.partners.id_provided is
   'DEPRECATED - identity is verified by Stripe Connect onboarding.';
 
 -- ---------------------------------------------------------------
 -- 2. FSA hygiene rating (fetched from api.ratings.food.gov.uk)
---    Held as text so it can carry both the 0-5 England/Wales/NI
---    scale and Scotland's Pass / Improvement Required scheme.
+--    text so it carries both FHRS (0-5) and FHIS (Pass / Improvement Required).
 -- ---------------------------------------------------------------
 alter table public.partners
   add column if not exists fsa_business_id     text,
@@ -33,7 +33,6 @@ alter table public.partners
 comment on column public.partners.fsa_rating is
   'Raw FSA rating value: "0".."5" (FHRS) or "Pass"/"Improvement Required" (FHIS).';
 
--- Single source of truth for the >= 3 (or Pass) eligibility gate.
 create or replace function public.fsa_rating_passes(_rating text)
 returns boolean
 language sql
@@ -51,21 +50,25 @@ $$;
 -- 3. Public liability insurance (the one manual admin job)
 -- ---------------------------------------------------------------
 alter table public.partners
-  add column if not exists insurance_doc_path   text,
-  add column if not exists insurance_verified_at timestamptz,
-  add column if not exists insurance_verified_by uuid references auth.users(id);
+  add column if not exists insurance_doc_path      text,
+  add column if not exists insurance_verified_at   timestamptz,
+  add column if not exists insurance_verified_by   uuid;
 
 comment on column public.partners.insurance_doc_path is
   'Storage path of the certificate the partner uploaded, for admin review.';
 
 -- ---------------------------------------------------------------
--- 4. Ownership: link partner rows to login accounts
---    partners.id is int8, so owner_id is a separate uuid column.
+-- 4. Ownership: link existing user_id to auth.users
+--    partners.id is int8, so user_id is the separate uuid ownership column.
 -- ---------------------------------------------------------------
-alter table public.partners
-  add column if not exists owner_id uuid references auth.users(id) on delete set null;
+do $$ begin
+  alter table public.partners
+    add constraint partners_user_id_fkey
+    foreign key (user_id) references auth.users(id) on delete set null;
+exception when duplicate_object then null;
+end $$;
 
-create index if not exists partners_owner_id_idx on public.partners (owner_id);
+create index if not exists partners_user_id_idx on public.partners (user_id);
 
 -- ---------------------------------------------------------------
 -- 5. Roles (admin vs partner) — never stored on the profile row
@@ -109,7 +112,7 @@ exception when duplicate_object then null;
 end $$;
 
 -- ---------------------------------------------------------------
--- 6. What the customer app is allowed to see
+-- 6. live_partners — what the customer app is allowed to see
 --    Live = active + Stripe able to charge + FSA gate passed.
 -- ---------------------------------------------------------------
 create or replace view public.live_partners as
