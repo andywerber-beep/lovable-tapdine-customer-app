@@ -2,8 +2,10 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Clock3, MapPin, Phone, Utensils } from "lucide-react";
 
+import { HygieneBadge } from "@/components/tapdine/HygieneBadge";
 import { getVenue } from "@/lib/tapdine.functions";
 import { activeOffers, formatPrice, venueAddress, type Venue } from "@/lib/tapdine-types";
+
 
 
 const venueQuery = (id: string) =>
@@ -104,6 +106,12 @@ function VenuePage() {
           {venueAddress(venue) || "Address coming soon"}
         </p>
       </header>
+
+      <div className="mt-5">
+        <HygieneBadge venue={venue} size="lg" />
+      </div>
+
+
 
       {venue.tel_number && (
         <a

@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { MapPin, Phone, Utensils, X } from "lucide-react";
 
+import { HygieneBadge } from "@/components/tapdine/HygieneBadge";
 import { activeOffers, distanceKm, venueAddress, type Venue } from "@/lib/tapdine-types";
+
 import type { Coords } from "@/hooks/useGeolocation";
 
 interface VenueSheetProps {
@@ -51,7 +53,7 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
             </button>
           </div>
 
-          <div className="mt-4 px-5">
+          <div className="mt-4 flex flex-wrap items-center gap-2 px-5">
             {offers.length > 0 ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-live/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-live">
                 <span className="size-1.5 rounded-full bg-live" />
@@ -62,7 +64,9 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
                 No live offers
               </span>
             )}
+            <HygieneBadge venue={venue} />
           </div>
+
 
           <div className="mt-5 grid grid-cols-1 gap-2 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:grid-cols-2">
             <Link

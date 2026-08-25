@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Offer, Venue } from "./tapdine-types";
 import { venueAddress } from "./tapdine-types";
 
-const VENUE_COLUMNS = `
+const BASE_VENUE_COLUMNS = `
   id,
   name,
   cuisine_type,
@@ -18,6 +18,25 @@ const VENUE_COLUMNS = `
   latitude,
   longitude
 `;
+
+/** FSA hygiene columns; absent until db/001-partners-compliance-and-stripe.sql is run. */
+const FSA_COLUMNS = `,
+  fsa_rating,
+  fsa_rating_date
+`;
+
+let hasFsaColumns = true;
+
+function venueColumns() {
+  return hasFsaColumns ? `${BASE_VENUE_COLUMNS}${FSA_COLUMNS}` : BASE_VENUE_COLUMNS;
+}
+
+/** Postgres error for an unknown column, so we can retry without the FSA fields. */
+function isMissingColumn(error: { code?: string; message?: string } | null) {
+  if (!error) return false;
+  return error.code === "42703" || /column .* does not exist/i.test(error.message ?? "");
+}
+
 
 const OFFER_COLUMNS = `
   id,
@@ -112,12 +131,24 @@ function splitOffers(rows: OfferRow[]) {
 export async function fetchVenues(): Promise<Venue[]> {
   const supabase = client();
 
+  async function selectVenues() {
+    const run = () =>
+      supabase
+        .from("partners")
+        .select(venueColumns())
+        .in("status", ["active", "Active", "ACTIVE"])
+        .order("name");
+
+    const first = await run();
+    if (isMissingColumn(first.error) && hasFsaColumns) {
+      hasFsaColumns = false;
+      return run();
+    }
+    return first;
+  }
+
   const [{ data: venueRows, error }, { data: offerRows, error: offerError }] = await Promise.all([
-    supabase
-      .from("partners")
-      .select(VENUE_COLUMNS)
-      .in("status", ["active", "Active", "ACTIVE"])
-      .order("name"),
+    selectVenues(),
     supabase.from("offers").select(OFFER_COLUMNS),
   ]);
 
@@ -136,14 +167,18 @@ export async function fetchVenues(): Promise<Venue[]> {
 export async function fetchVenue(id: string): Promise<Venue | null> {
   const supabase = client();
 
-  const { data, error } = await supabase
-    .from("partners")
-    .select(VENUE_COLUMNS)
-    .eq("id", id)
-    .maybeSingle();
+  const run = () =>
+    supabase.from("partners").select(venueColumns()).eq("id", id).maybeSingle();
+
+  let { data, error } = await run();
+  if (isMissingColumn(error) && hasFsaColumns) {
+    hasFsaColumns = false;
+    ({ data, error } = await run());
+  }
 
   if (error) throw new Error(error.message);
   if (!data) return null;
+
 
   const { data: offerRows, error: offerError } = await supabase
     .from("offers")
