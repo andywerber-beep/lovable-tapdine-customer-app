@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Offer, Venue } from "./tapdine-types";
 import { venueAddress } from "./tapdine-types";
 
-const VENUE_COLUMNS = `
+const BASE_VENUE_COLUMNS = `
   id,
   name,
   cuisine_type,
@@ -18,6 +18,25 @@ const VENUE_COLUMNS = `
   latitude,
   longitude
 `;
+
+/** FSA hygiene columns; absent until db/001-partners-compliance-and-stripe.sql is run. */
+const FSA_COLUMNS = `,
+  fsa_rating,
+  fsa_rating_date
+`;
+
+let hasFsaColumns = true;
+
+function venueColumns() {
+  return hasFsaColumns ? `${BASE_VENUE_COLUMNS}${FSA_COLUMNS}` : BASE_VENUE_COLUMNS;
+}
+
+/** Postgres error for an unknown column, so we can retry without the FSA fields. */
+function isMissingColumn(error: { code?: string; message?: string } | null) {
+  if (!error) return false;
+  return error.code === "42703" || /column .* does not exist/i.test(error.message ?? "");
+}
+
 
 const OFFER_COLUMNS = `
   id,
