@@ -36,6 +36,8 @@ export const Route = createFileRoute("/")({
         content:
           "A live map of local venues running flash offers right now. Proximity pings unlock exclusive deals as you walk.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: RadarPage,

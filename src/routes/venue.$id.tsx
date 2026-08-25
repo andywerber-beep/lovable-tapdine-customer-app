@@ -1,6 +1,7 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { ArrowLeft, Clock3, MapPin, Phone, Utensils } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { HygieneBadge } from "@/components/tapdine/HygieneBadge";
 import { getVenue } from "@/lib/tapdine.functions";
@@ -37,6 +38,8 @@ export const Route = createFileRoute("/venue/$id")({
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
     };
   },
@@ -45,7 +48,7 @@ export const Route = createFileRoute("/venue/$id")({
   notFoundComponent: VenueMissing,
 });
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children }: { children: ReactNode }) {
   return (
     <main className="min-h-screen bg-background px-5 pb-16 pt-[max(1.25rem,env(safe-area-inset-top))]">
       <div className="mx-auto max-w-xl">{children}</div>
