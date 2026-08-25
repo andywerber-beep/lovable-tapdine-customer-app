@@ -1,5 +1,5 @@
 export interface Offer {
-  id: number;
+  id: string | number;
   title: string;
   description: string | null;
   discount_type: string | null;
@@ -26,8 +26,8 @@ export interface Venue {
   latitude: number | null;
   longitude: number | null;
   /** Raw FSA value: "0".."5" (FHRS) or "Pass"/"Improvement Required" (FHIS, Scotland). */
-  fsa_rating?: string | null;
-  fsa_rating_date?: string | null;
+  fsa_rating: string | null;
+  fsa_rating_date: string | null;
   offers: Offer[];
 }
 
