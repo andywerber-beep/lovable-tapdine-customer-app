@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { MapPin, Phone, Utensils, X } from "lucide-react";
 
+import { HygieneBadge } from "@/components/tapdine/HygieneBadge";
 import { activeOffers, distanceKm, venueAddress, type Venue } from "@/lib/tapdine-types";
+
 import type { Coords } from "@/hooks/useGeolocation";
 
 interface VenueSheetProps {
