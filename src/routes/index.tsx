@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { ClientOnly } from "@tanstack/react-router";
-import { Compass, Loader2, MapPinned, Search } from "lucide-react";
+import { Compass, Download, Loader2, MapPinned, Search } from "lucide-react";
 import { Suspense, lazy, useMemo, useState } from "react";
 
 import { ProximityBanner } from "@/components/tapdine/ProximityBanner";
 import { VenueSheet } from "@/components/tapdine/VenueSheet";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { getMapConfig, listVenues } from "@/lib/tapdine.functions";
 import { activeOffers, type Venue } from "@/lib/tapdine-types";
 
