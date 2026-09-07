@@ -73,6 +73,7 @@ function RadarPage() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
 
   const { userLocation, denied, proximityVenue, clearProximityAlert } = useGeolocation(data.venues);
+  const { canInstall, promptInstall } = useInstallPrompt();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -155,9 +156,21 @@ function RadarPage() {
                     : "Finding you on the map…"}
               </p>
             </div>
-            <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-ember/15 text-ember">
-              <MapPinned className="size-5" />
-            </span>
+            {canInstall ? (
+              <button
+                type="button"
+                onClick={promptInstall}
+                aria-label="Install the TapDine app"
+                className="grid size-10 shrink-0 place-items-center rounded-2xl bg-ember text-ember-foreground transition-transform hover:scale-105"
+                style={{ boxShadow: "var(--shadow-ember)" }}
+              >
+                <Download className="size-5" />
+              </button>
+            ) : (
+              <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-ember/15 text-ember">
+                <MapPinned className="size-5" />
+              </span>
+            )}
           </div>
         </div>
       )}
