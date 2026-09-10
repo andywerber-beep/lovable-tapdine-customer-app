@@ -6,6 +6,7 @@ import { Suspense, lazy, useMemo, useState } from "react";
 
 import { InstallButton } from "@/components/tapdine/InstallButton";
 import { ProximityBanner } from "@/components/tapdine/ProximityBanner";
+import { TapDineBrand } from "@/components/tapdine/TapDineBrand";
 import { VenueSheet } from "@/components/tapdine/VenueSheet";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { getMapConfig, listVenues } from "@/lib/tapdine.functions";
@@ -122,20 +123,23 @@ function RadarPage() {
             }}
           />
         ) : (
-          <div className="pointer-events-auto mx-auto flex max-w-xl items-center gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-surface/90 px-4 py-3 backdrop-blur-xl">
-              <Search className="size-4 shrink-0 text-muted-foreground" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search venues, cuisine, town"
-                aria-label="Search venues"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              />
+          <div className="pointer-events-auto mx-auto max-w-xl space-y-3">
+            <TapDineBrand />
+            <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-surface/90 px-4 py-3 backdrop-blur-xl">
+                <Search className="size-4 shrink-0 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search venues, cuisine, town"
+                  aria-label="Search venues"
+                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+              <span className="grid size-11 shrink-0 place-items-center rounded-full border border-border bg-surface/90 backdrop-blur-xl">
+                <Compass className="size-5 text-ember" />
+              </span>
             </div>
-            <span className="grid size-11 shrink-0 place-items-center rounded-full border border-border bg-surface/90 backdrop-blur-xl">
-              <Compass className="size-5 text-ember" />
-            </span>
           </div>
         )}
       </header>
