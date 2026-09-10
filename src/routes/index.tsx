@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { ClientOnly } from "@tanstack/react-router";
-import { Compass, Download, Loader2, MapPinned, Search } from "lucide-react";
+import { Compass, Loader2, Search } from "lucide-react";
 import { Suspense, lazy, useMemo, useState } from "react";
 
+import { InstallButton } from "@/components/tapdine/InstallButton";
 import { ProximityBanner } from "@/components/tapdine/ProximityBanner";
 import { VenueSheet } from "@/components/tapdine/VenueSheet";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { getMapConfig, listVenues } from "@/lib/tapdine.functions";
 import { activeOffers, type Venue } from "@/lib/tapdine-types";
 
@@ -73,7 +73,6 @@ function RadarPage() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
 
   const { userLocation, denied, proximityVenue, clearProximityAlert } = useGeolocation(data.venues);
-  const { canInstall, promptInstall } = useInstallPrompt();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -156,21 +155,7 @@ function RadarPage() {
                     : "Finding you on the map…"}
               </p>
             </div>
-            {canInstall ? (
-              <button
-                type="button"
-                onClick={promptInstall}
-                aria-label="Install the TapDine app"
-                className="grid size-10 shrink-0 place-items-center rounded-2xl bg-ember text-ember-foreground transition-transform hover:scale-105"
-                style={{ boxShadow: "var(--shadow-ember)" }}
-              >
-                <Download className="size-5" />
-              </button>
-            ) : (
-              <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-ember/15 text-ember">
-                <MapPinned className="size-5" />
-              </span>
-            )}
+            <InstallButton />
           </div>
         </div>
       )}
