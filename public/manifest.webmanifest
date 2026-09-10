@@ -1,13 +1,13 @@
 {
-  "name": "TapDine — Live Local Restaurant Offers",
+  "name": "TapDine",
   "short_name": "TapDine",
   "description": "A live radar of nearby restaurants and bars running flash offers. Walk past, get pinged, tap to unlock the deal.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#17171C",
-  "theme_color": "#17171C",
+  "background_color": "#0b1710",
+  "theme_color": "#0b1710",
   "icons": [
     {
       "src": "/icon-192.png",
