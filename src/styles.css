@@ -70,6 +70,7 @@
   --color-surface-raised: var(--surface-raised);
   --color-live: var(--live);
   --color-live-foreground: var(--live-foreground);
+  --color-brand-mark: var(--brand-mark);
 }
 
 :root {
@@ -122,6 +123,7 @@
   --gold-foreground: oklch(0.25 0.05 80);
   --live: oklch(0.586 0.087 145.333);
   --live-foreground: oklch(1 0 0);
+  --brand-mark: oklch(0.25 0.05 158.525);
 
   --gradient-ember: linear-gradient(135deg, var(--primary), var(--secondary));
   --gradient-veil: linear-gradient(to top, var(--background) 8%, transparent 100%);
@@ -175,6 +177,7 @@
   --gold-foreground: oklch(0.25 0.05 80);
   --live: oklch(0.783 0.067 142.901);
   --live-foreground: oklch(0.25 0.05 158.525);
+  --brand-mark: oklch(0.205 0.037 158.525);
 
   --gradient-ember: linear-gradient(135deg, var(--primary), var(--gold));
   --gradient-veil: linear-gradient(to top, oklch(0.25 0.05 158.525) 8%, transparent 100%);
@@ -210,7 +213,7 @@
 }
 
 @utility text-gradient-gold {
-  background-image: linear-gradient(135deg, var(--gold), var(--secondary));
+  background-image: linear-gradient(135deg, var(--gold), var(--warning));
   background-clip: text;
   color: transparent;
 }
