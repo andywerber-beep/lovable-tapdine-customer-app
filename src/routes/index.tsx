@@ -76,16 +76,18 @@ function RadarPage() {
   const { userLocation, denied, proximityVenue, clearProximityAlert } = useGeolocation(data.venues);
 
   const filtered = useMemo(() => {
+    // Only venues with at least one live offer appear on the radar.
+    const live = data.venues.filter((venue) => activeOffers(venue).length > 0);
     const q = query.trim().toLowerCase();
-    if (!q) return data.venues;
-    return data.venues.filter((venue) =>
+    if (!q) return live;
+    return live.filter((venue) =>
       [venue.name, venue.cuisine_type, venue.town].some((field) =>
         field?.toLowerCase().includes(q),
       ),
     );
   }, [data.venues, query]);
 
-  const liveCount = data.venues.filter((venue) => activeOffers(venue).length > 0).length;
+  const liveCount = filtered.length;
 
   return (
     <main className="relative h-[100dvh] w-full overflow-hidden bg-background">
