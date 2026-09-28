@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { ClientOnly } from "@tanstack/react-router";
 import { Compass, Loader2, Search } from "lucide-react";
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 
 import { InstallButton } from "@/components/tapdine/InstallButton";
 import { ProximityBanner } from "@/components/tapdine/ProximityBanner";
@@ -72,6 +72,9 @@ function RadarPage() {
   const { data } = useSuspenseQuery(radarQuery);
   const [query, setQuery] = useState("");
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [fitTrigger, setFitTrigger] = useState(0);
+  const [recenterTrigger, setRecenterTrigger] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { userLocation, denied, proximityVenue, clearProximityAlert } = useGeolocation(data.venues);
 
@@ -90,6 +93,32 @@ function RadarPage() {
   const liveCount = filtered.length;
   const showingDemo = data.venues.some((venue) => venue.id.startsWith("demo-"));
 
+  // Pan the map to fit search matches as the user types / submits.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (query.trim() && filtered.length > 0) {
+      setFitTrigger((n) => n + 1);
+    } else if (!query.trim()) {
+      setRecenterTrigger((n) => n + 1);
+    }
+  }, [query, filtered.length]);
+
+  const handleSearchSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (filtered.length > 0) setFitTrigger((n) => n + 1);
+    searchInputRef.current?.blur();
+  };
+
+  const handleRecenter = () => {
+    setQuery("");
+    setRecenterTrigger((n) => n + 1);
+    searchInputRef.current?.blur();
+  };
+
   return (
     <main className="relative h-[100dvh] w-full overflow-hidden bg-background">
       <div className="absolute inset-0">
@@ -102,6 +131,8 @@ function RadarPage() {
                 userLocation={userLocation}
                 selectedVenue={selectedVenue}
                 onSelect={setSelectedVenue}
+                fitTrigger={fitTrigger}
+                recenterTrigger={recenterTrigger}
               />
             </Suspense>
           </ClientOnly>
@@ -131,21 +162,29 @@ function RadarPage() {
               <TapDineBrand />
               {showingDemo && <span className="rounded-full bg-gold px-3 py-1 text-[11px] font-extrabold text-gold-foreground">DEMO MAP</span>}
             </div>
-            <div className="flex items-center gap-3">
+            <form className="flex items-center gap-3" onSubmit={handleSearchSubmit}>
               <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-primary/20 bg-surface/95 px-4 py-3 shadow-sm backdrop-blur-xl">
                 <Search className="size-4 shrink-0 text-primary" />
                 <input
+                  ref={searchInputRef}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search venues, cuisine, town"
                   aria-label="Search venues"
+                  enterKeyHint="search"
                   className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
               </div>
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm">
+              <button
+                type="button"
+                onClick={handleRecenter}
+                aria-label="Re-center map on my location"
+                title="Re-center on my location"
+                className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm transition-transform hover:scale-105 active:scale-95"
+              >
                 <Compass className="size-5" />
-              </span>
-            </div>
+              </button>
+            </form>
           </div>
         )}
       </header>

@@ -1,5 +1,5 @@
 import { AdvancedMarker, APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { activeOffers, type Venue } from "@/lib/tapdine-types";
 import type { Coords } from "@/hooks/useGeolocation";
@@ -14,14 +14,60 @@ interface MapRadarProps {
   userLocation: Coords | null;
   selectedVenue: Venue | null;
   onSelect: (venue: Venue) => void;
+  fitTrigger: number;
+  recenterTrigger: number;
 }
 
-function Recenter({ center }: { center: { lat: number; lng: number } | null }) {
+function Recenter({
+  center,
+  trigger,
+}: {
+  center: { lat: number; lng: number } | null;
+  trigger: number;
+}) {
+  const map = useMap();
+  const lastTrigger = useRef(0);
+
+  useEffect(() => {
+    if (!map || !center) return;
+    map.panTo(center);
+    if (trigger !== lastTrigger.current) {
+      lastTrigger.current = trigger;
+      map.setZoom(15);
+    }
+  }, [map, center, trigger]);
+
+  return null;
+}
+
+function FitToVenues({ venues, trigger }: { venues: Venue[]; trigger: number }) {
   const map = useMap();
 
   useEffect(() => {
-    if (map && center) map.panTo(center);
-  }, [map, center]);
+    if (!map || trigger === 0) return;
+    const points = venues.filter(
+      (v): v is Venue & { latitude: number; longitude: number } =>
+        v.latitude != null && v.longitude != null,
+    );
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      const only = points[0]!;
+      map.panTo({ lat: only.latitude, lng: only.longitude });
+      map.setZoom(15);
+      return;
+    }
+    const lats = points.map((v) => v.latitude);
+    const lngs = points.map((v) => v.longitude);
+    map.fitBounds(
+      {
+        north: Math.max(...lats),
+        south: Math.min(...lats),
+        east: Math.max(...lngs),
+        west: Math.min(...lngs),
+      },
+      80,
+    );
+  }, [map, venues, trigger]);
 
   return null;
 }
@@ -32,6 +78,8 @@ export default function MapRadar({
   userLocation,
   selectedVenue,
   onSelect,
+  fitTrigger,
+  recenterTrigger,
 }: MapRadarProps) {
   const firstMappedVenue = venues.find((venue) => venue.latitude != null && venue.longitude != null);
   const center = userLocation
@@ -52,7 +100,8 @@ export default function MapRadar({
         disableDefaultUI
         clickableIcons={false}
       >
-        <Recenter center={userLocation ? center : null} />
+        <Recenter center={userLocation ? center : null} trigger={recenterTrigger} />
+        <FitToVenues venues={venues} trigger={fitTrigger} />
 
         {userLocation && (
           <AdvancedMarker position={center} title="You" zIndex={5}>
