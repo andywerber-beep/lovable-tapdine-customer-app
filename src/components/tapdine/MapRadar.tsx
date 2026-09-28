@@ -33,9 +33,12 @@ export default function MapRadar({
   selectedVenue,
   onSelect,
 }: MapRadarProps) {
+  const firstMappedVenue = venues.find((venue) => venue.latitude != null && venue.longitude != null);
   const center = userLocation
     ? { lat: userLocation.latitude, lng: userLocation.longitude }
-    : FALLBACK_CENTER;
+    : firstMappedVenue?.latitude != null && firstMappedVenue.longitude != null
+      ? { lat: firstMappedVenue.latitude, lng: firstMappedVenue.longitude }
+      : FALLBACK_CENTER;
 
   return (
     <APIProvider apiKey={apiKey}>
@@ -64,7 +67,7 @@ export default function MapRadar({
           if (venue.latitude == null || venue.longitude == null) return null;
           const offers = activeOffers(venue);
           const live = offers.length > 0;
-          const headline = offers[0]?.title ?? null;
+          const price = offers[0]?.discount_price;
           const isSelected = selectedVenue?.id === venue.id;
 
           return (
@@ -77,31 +80,17 @@ export default function MapRadar({
             >
               <button
                 type="button"
-                className={`flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 backdrop-blur-md transition-transform duration-200 ${
-                  isSelected ? "scale-110" : "hover:scale-105"
-                } ${
-                  live
-                    ? "border-live/50 bg-surface/95"
-                    : "border-border bg-surface/80 opacity-80"
-                }`}
+                aria-label={`Open ${venue.name}`}
+                className={`group flex min-h-11 items-center gap-2 rounded-full border-2 border-surface bg-gold py-1 pl-1 pr-3 text-gold-foreground transition-transform duration-200 ${isSelected ? "scale-110" : "hover:scale-105"}`}
                 style={isSelected ? { boxShadow: "var(--shadow-ember)" } : undefined}
               >
-                <span
-                  className={`grid size-6 place-items-center rounded-full text-[10px] font-bold ${
-                    live ? "bg-live text-live-foreground" : "bg-ember text-ember-foreground"
-                  }`}
-                >
+                <span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
                   {live ? offers.length : "•"}
                 </span>
-                <span className="max-w-[9rem] truncate text-[11px] font-semibold text-foreground">
+                <span className="max-w-[9rem] truncate text-xs font-bold">
                   {venue.name}
                 </span>
-                {headline && (
-                  <span className="max-w-[8rem] truncate text-[11px] font-semibold text-gold">
-                    {headline}
-                  </span>
-                )}
-
+                {price != null && <span className="text-xs font-extrabold">£{price.toFixed(2)}</span>}
               </button>
             </AdvancedMarker>
           );

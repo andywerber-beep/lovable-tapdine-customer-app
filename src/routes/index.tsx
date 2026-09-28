@@ -88,6 +88,7 @@ function RadarPage() {
   }, [data.venues, query]);
 
   const liveCount = filtered.length;
+  const showingDemo = data.venues.some((venue) => venue.id.startsWith("demo-"));
 
   return (
     <main className="relative h-[100dvh] w-full overflow-hidden bg-background">
@@ -126,10 +127,13 @@ function RadarPage() {
           />
         ) : (
           <div className="pointer-events-auto mx-auto max-w-xl space-y-3">
-            <TapDineBrand />
+            <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface/95 px-4 py-2 shadow-sm backdrop-blur-xl">
+              <TapDineBrand />
+              {showingDemo && <span className="rounded-full bg-gold px-3 py-1 text-[11px] font-extrabold text-gold-foreground">DEMO MAP</span>}
+            </div>
             <div className="flex items-center gap-3">
-              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-surface/90 px-4 py-3 backdrop-blur-xl">
-                <Search className="size-4 shrink-0 text-muted-foreground" />
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-primary/20 bg-surface/95 px-4 py-3 shadow-sm backdrop-blur-xl">
+                <Search className="size-4 shrink-0 text-primary" />
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -138,8 +142,8 @@ function RadarPage() {
                   className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
               </div>
-              <span className="grid size-11 shrink-0 place-items-center rounded-full border border-border bg-surface/90 backdrop-blur-xl">
-                <Compass className="size-5 text-ember" />
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                <Compass className="size-5" />
               </span>
             </div>
           </div>
@@ -148,16 +152,16 @@ function RadarPage() {
 
       {!selectedVenue && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <div className="mx-auto flex max-w-xl items-center justify-between gap-4 rounded-3xl border border-border bg-surface/90 px-5 py-4 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-xl items-center justify-between gap-4 rounded-3xl border border-primary/15 bg-surface/95 px-5 py-4 shadow-lg backdrop-blur-xl">
             <div className="min-w-0">
               <p className="font-display text-lg font-semibold">
-                <span className="text-gradient-ember">{liveCount}</span> venues live now
+                <span className="text-primary">{liveCount}</span> deals live now
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 {denied
                   ? "Enable location to get proximity pings"
                   : userLocation
-                    ? "Tap a marker to open its lookbook"
+                    ? "Tap a golden marker to see the deal"
                     : "Finding you on the map…"}
               </p>
             </div>
