@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { ClientOnly } from "@tanstack/react-router";
 import { Compass, Loader2, Search } from "lucide-react";
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 
 import { InstallButton } from "@/components/tapdine/InstallButton";
 import { ProximityBanner } from "@/components/tapdine/ProximityBanner";
@@ -72,6 +72,9 @@ function RadarPage() {
   const { data } = useSuspenseQuery(radarQuery);
   const [query, setQuery] = useState("");
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [fitTrigger, setFitTrigger] = useState(0);
+  const [recenterTrigger, setRecenterTrigger] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { userLocation, denied, proximityVenue, clearProximityAlert } = useGeolocation(data.venues);
 
