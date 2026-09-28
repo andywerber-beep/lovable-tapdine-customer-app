@@ -60,7 +60,7 @@ function BackLink() {
   return (
     <Link
       to="/"
-      className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground"
+      className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-surface px-4 py-2 text-sm font-bold text-primary shadow-sm transition-colors hover:bg-accent"
     >
       <ArrowLeft className="size-4" /> Radar
     </Link>
@@ -99,11 +99,11 @@ function VenuePage() {
       <BackLink />
 
       <header className="mt-6">
-        <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold">
+        <p className="flex items-center gap-2 text-sm font-bold text-primary">
           <Utensils className="size-3" />
           {venue.cuisine_type ?? "Restaurant"}
         </p>
-        <h1 className="mt-2 font-display text-4xl font-semibold leading-[1.05]">{venue.name}</h1>
+        <h1 className="mt-2 font-display text-4xl font-bold leading-[1.05]">{venue.name}</h1>
         <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
           <MapPin className="mt-0.5 size-4 shrink-0" />
           {venueAddress(venue) || "Address coming soon"}
@@ -128,8 +128,8 @@ function VenuePage() {
 
       <section className="mt-10">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-xl font-semibold">Tonight's lookbook</h2>
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <h2 className="font-display text-xl font-bold">Deals to make you smile</h2>
+          <span className="rounded-full bg-gold px-3 py-1 text-xs font-extrabold text-gold-foreground">
             {offers.length} live
           </span>
         </div>
@@ -143,7 +143,7 @@ function VenuePage() {
             {offers.map((offer) => (
               <li
                 key={offer.id}
-                className="overflow-hidden rounded-3xl border border-border bg-surface"
+                className="overflow-hidden rounded-3xl border border-primary/15 bg-surface"
                 style={{ boxShadow: "var(--shadow-lift)" }}
               >
                 {offer.image_url && (
@@ -151,17 +151,19 @@ function VenuePage() {
                     src={offer.image_url}
                     alt={offer.title}
                     loading="lazy"
+                    width={1200}
+                    height={720}
                     className="h-44 w-full object-cover"
                   />
                 )}
                 <div className="p-5">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-live/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-live">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1.5 text-xs font-extrabold text-gold-foreground">
                     <Clock3 className="size-3" /> {offer.discount_type || "Live now"}
                   </span>
                   <div className="mt-3 flex items-start justify-between gap-4">
-                    <h3 className="font-display text-xl font-semibold">{offer.title}</h3>
+                    <h3 className="font-display text-xl font-bold">{offer.title}</h3>
                     {formatPrice(offer.discount_price) && (
-                      <span className="shrink-0 font-display text-xl font-semibold text-gradient-ember">
+                      <span className="shrink-0 font-display text-xl font-extrabold text-primary">
                         {formatPrice(offer.discount_price)}
                       </span>
                     )}
