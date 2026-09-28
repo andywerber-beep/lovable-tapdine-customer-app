@@ -131,6 +131,8 @@ function RadarPage() {
                 userLocation={userLocation}
                 selectedVenue={selectedVenue}
                 onSelect={setSelectedVenue}
+                fitTrigger={fitTrigger}
+                recenterTrigger={recenterTrigger}
               />
             </Suspense>
           </ClientOnly>
@@ -160,21 +162,29 @@ function RadarPage() {
               <TapDineBrand />
               {showingDemo && <span className="rounded-full bg-gold px-3 py-1 text-[11px] font-extrabold text-gold-foreground">DEMO MAP</span>}
             </div>
-            <div className="flex items-center gap-3">
+            <form className="flex items-center gap-3" onSubmit={handleSearchSubmit}>
               <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-primary/20 bg-surface/95 px-4 py-3 shadow-sm backdrop-blur-xl">
                 <Search className="size-4 shrink-0 text-primary" />
                 <input
+                  ref={searchInputRef}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search venues, cuisine, town"
                   aria-label="Search venues"
+                  enterKeyHint="search"
                   className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
               </div>
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm">
+              <button
+                type="button"
+                onClick={handleRecenter}
+                aria-label="Re-center map on my location"
+                title="Re-center on my location"
+                className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm transition-transform hover:scale-105 active:scale-95"
+              >
                 <Compass className="size-5" />
-              </span>
-            </div>
+              </button>
+            </form>
           </div>
         )}
       </header>
