@@ -93,6 +93,32 @@ function RadarPage() {
   const liveCount = filtered.length;
   const showingDemo = data.venues.some((venue) => venue.id.startsWith("demo-"));
 
+  // Pan the map to fit search matches as the user types / submits.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (query.trim() && filtered.length > 0) {
+      setFitTrigger((n) => n + 1);
+    } else if (!query.trim()) {
+      setRecenterTrigger((n) => n + 1);
+    }
+  }, [query, filtered.length]);
+
+  const handleSearchSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (filtered.length > 0) setFitTrigger((n) => n + 1);
+    searchInputRef.current?.blur();
+  };
+
+  const handleRecenter = () => {
+    setQuery("");
+    setRecenterTrigger((n) => n + 1);
+    searchInputRef.current?.blur();
+  };
+
   return (
     <main className="relative h-[100dvh] w-full overflow-hidden bg-background">
       <div className="absolute inset-0">
