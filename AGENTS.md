@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Demo customer venues live only in `src/lib/demo-venues.ts` and are returned only when no real live offers exist, keeping partner data authoritative and demo removal isolated.
