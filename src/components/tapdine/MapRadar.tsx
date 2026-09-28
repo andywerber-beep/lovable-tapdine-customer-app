@@ -14,6 +14,8 @@ interface MapRadarProps {
   userLocation: Coords | null;
   selectedVenue: Venue | null;
   onSelect: (venue: Venue) => void;
+  fitTrigger: number;
+  recenterTrigger: number;
 }
 
 function Recenter({ center }: { center: { lat: number; lng: number } | null }) {
@@ -52,6 +54,8 @@ export default function MapRadar({
   userLocation,
   selectedVenue,
   onSelect,
+  fitTrigger,
+  recenterTrigger,
 }: MapRadarProps) {
   const firstMappedVenue = venues.find((venue) => venue.latitude != null && venue.longitude != null);
   const center = userLocation
