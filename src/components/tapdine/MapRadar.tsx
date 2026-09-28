@@ -1,5 +1,5 @@
 import { AdvancedMarker, APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { activeOffers, type Venue } from "@/lib/tapdine-types";
 import type { Coords } from "@/hooks/useGeolocation";
@@ -26,10 +26,13 @@ function Recenter({
   trigger: number;
 }) {
   const map = useMap();
+  const lastTrigger = useRef(0);
 
   useEffect(() => {
-    if (map && center) {
-      map.panTo(center);
+    if (!map || !center) return;
+    map.panTo(center);
+    if (trigger !== lastTrigger.current) {
+      lastTrigger.current = trigger;
       map.setZoom(15);
     }
   }, [map, center, trigger]);
