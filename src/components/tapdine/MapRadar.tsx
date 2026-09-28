@@ -18,12 +18,21 @@ interface MapRadarProps {
   recenterTrigger: number;
 }
 
-function Recenter({ center }: { center: { lat: number; lng: number } | null }) {
+function Recenter({
+  center,
+  trigger,
+}: {
+  center: { lat: number; lng: number } | null;
+  trigger: number;
+}) {
   const map = useMap();
 
   useEffect(() => {
-    if (map && center) map.panTo(center);
-  }, [map, center]);
+    if (map && center) {
+      map.panTo(center);
+      map.setZoom(15);
+    }
+  }, [map, center, trigger]);
 
   return null;
 }
@@ -76,7 +85,8 @@ export default function MapRadar({
         disableDefaultUI
         clickableIcons={false}
       >
-        <Recenter center={userLocation ? center : null} />
+        <Recenter center={userLocation ? center : null} trigger={recenterTrigger} />
+        <FitToVenues venues={venues} trigger={fitTrigger} />
 
         {userLocation && (
           <AdvancedMarker position={center} title="You" zIndex={5}>
