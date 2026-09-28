@@ -51,7 +51,7 @@ function FitToVenues({ venues, trigger }: { venues: Venue[]; trigger: number }) 
     );
     if (points.length === 0) return;
     if (points.length === 1) {
-      const only = points[0];
+      const only = points[0]!;
       map.panTo({ lat: only.latitude, lng: only.longitude });
       map.setZoom(15);
       return;
