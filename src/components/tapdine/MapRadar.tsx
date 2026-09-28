@@ -45,16 +45,28 @@ function FitToVenues({ venues, trigger }: { venues: Venue[]; trigger: number }) 
 
   useEffect(() => {
     if (!map || trigger === 0) return;
-    const points = venues.filter((v) => v.latitude != null && v.longitude != null);
+    const points = venues.filter(
+      (v): v is Venue & { latitude: number; longitude: number } =>
+        v.latitude != null && v.longitude != null,
+    );
     if (points.length === 0) return;
     if (points.length === 1) {
-      map.panTo({ lat: points[0].latitude!, lng: points[0].longitude! });
+      const only = points[0];
+      map.panTo({ lat: only.latitude, lng: only.longitude });
       map.setZoom(15);
       return;
     }
-    const bounds = new google.maps.LatLngBounds();
-    points.forEach((v) => bounds.extend({ lat: v.latitude!, lng: v.longitude! }));
-    map.fitBounds(bounds, 80);
+    const lats = points.map((v) => v.latitude);
+    const lngs = points.map((v) => v.longitude);
+    map.fitBounds(
+      {
+        north: Math.max(...lats),
+        south: Math.min(...lats),
+        east: Math.max(...lngs),
+        west: Math.min(...lngs),
+      },
+      80,
+    );
   }, [map, venues, trigger]);
 
   return null;
