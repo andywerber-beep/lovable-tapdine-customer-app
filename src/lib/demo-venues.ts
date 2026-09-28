@@ -2,6 +2,8 @@ import cafeImage from "@/assets/demo-brighton-cafe.jpg";
 import pizzaImage from "@/assets/demo-brighton-pizza.jpg";
 import burgerImage from "@/assets/demo-brighton-burger.jpg";
 import streetFoodImage from "@/assets/demo-brighton-street-food.jpg";
+import worthingCafeImage from "@/assets/demo-worthing-cafe.jpg";
+import worthingSeafoodImage from "@/assets/demo-worthing-seafood.jpg";
 
 import type { Venue } from "./tapdine-types";
 
@@ -121,10 +123,68 @@ export const DEMO_VENUES: Venue[] = [
       is_active: true,
       proximity_ping: true,
       expires_at: null,
-      created_at: "2026-09-01T12:00:00Z",
-    }],
-  },
-];
+          created_at: "2026-09-01T12:00:00Z",
+        }],
+      },
+      {
+        id: "demo-worthing-malt-cafe",
+        name: "Demo · Malt Cafe",
+        cuisine_type: "Cafe & Brunch",
+        status: "active",
+        town: "Worthing",
+        postcode: "BN11 3AU",
+        address1: "Montague Street",
+        address2: null,
+        tel_number: null,
+        website_url: null,
+        proximity_ping_enabled: true,
+        latitude: 50.8122,
+        longitude: -0.3735,
+        fsa_rating: "5",
+        fsa_rating_date: "2026-05-18",
+        offers: [{
+          id: "demo-offer-worthing-cafe",
+          title: "Flat white & fresh pastry",
+          description: "A silky flat white with a warm pastry straight from the oven.",
+          discount_type: "Demo deal",
+          discount_price: 5.5,
+          image_url: worthingCafeImage,
+          is_active: true,
+          proximity_ping: true,
+          expires_at: null,
+          created_at: "2026-09-01T13:00:00Z",
+        }],
+      },
+      {
+        id: "demo-worthing-crabshack",
+        name: "Demo · Crabshack",
+        cuisine_type: "Seafood & Beach Bar",
+        status: "active",
+        town: "Worthing",
+        postcode: "BN11 3QY",
+        address1: "Marine Parade",
+        address2: null,
+        tel_number: null,
+        website_url: null,
+        proximity_ping_enabled: true,
+        latitude: 50.8105,
+        longitude: -0.3695,
+        fsa_rating: "5",
+        fsa_rating_date: "2026-08-02",
+        offers: [{
+          id: "demo-offer-worthing-crabshack",
+          title: "Crispy calamari & draft pint",
+          description: "Golden calamari with lemon, house dip and a cold draft pint.",
+          discount_type: "Demo deal",
+          discount_price: 9,
+          image_url: worthingSeafoodImage,
+          is_active: true,
+          proximity_ping: true,
+          expires_at: null,
+          created_at: "2026-09-01T14:00:00Z",
+        }],
+      },
+    ];
 
 export function getDemoVenue(id: string) {
   return DEMO_VENUES.find((venue) => venue.id === id) ?? null;
