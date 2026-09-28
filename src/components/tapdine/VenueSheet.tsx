@@ -45,14 +45,14 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
                 <span className="truncate">{venue.cuisine_type ?? "Restaurant"}</span>
                 {away != null && <span>· {away.toFixed(1)} km away</span>}
               </div>
-              <h2 className="mt-1 truncate font-display text-2xl font-bold">{venue.name}</h2>
+              <h2 className="mt-1 font-display text-2xl font-bold leading-tight">{venue.name}</h2>
               <p className="mt-1 line-clamp-1 text-sm font-semibold text-muted-foreground">{offer?.title ?? "Live offer"}</p>
             </div>
             {formatPrice(offer?.discount_price ?? null) && <span className="shrink-0 font-display text-2xl font-extrabold text-primary">{formatPrice(offer?.discount_price ?? null)}</span>}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2 px-5">
-            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="size-3.5 text-primary" /> Brighton</span>
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="size-3.5 text-primary" /> {venue.town ?? "Nearby"}</span>
             <HygieneBadge venue={venue} />
           </div>
 
