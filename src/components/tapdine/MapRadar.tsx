@@ -26,6 +26,26 @@ function Recenter({ center }: { center: { lat: number; lng: number } | null }) {
   return null;
 }
 
+function FitToVenues({ venues, trigger }: { venues: Venue[]; trigger: number }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || trigger === 0) return;
+    const points = venues.filter((v) => v.latitude != null && v.longitude != null);
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      map.panTo({ lat: points[0].latitude!, lng: points[0].longitude! });
+      map.setZoom(15);
+      return;
+    }
+    const bounds = new google.maps.LatLngBounds();
+    points.forEach((v) => bounds.extend({ lat: v.latitude!, lng: v.longitude! }));
+    map.fitBounds(bounds, 80);
+  }, [map, venues, trigger]);
+
+  return null;
+}
+
 export default function MapRadar({
   apiKey,
   venues,
