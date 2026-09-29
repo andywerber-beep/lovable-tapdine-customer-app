@@ -62,7 +62,7 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
               params={{ id: venue.id }}
               className="flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 font-bold text-primary-foreground transition-transform hover:scale-[1.01]"
             >
-              {offers.length > 0 ? "Claim offer" : "View details"} <ArrowRight className="size-4" />
+              {offers.length > 0 ? "View deals & pay" : "View details"} <ArrowRight className="size-4" />
             </Link>
           </div>
         </div>
