@@ -76,6 +76,7 @@ export interface CheckoutRequest {
   offerTitle: string;
   offerImage: string | null;
   amountPence: number;
+  claimCode: string;
   successUrl: string;
   cancelUrl: string;
 }
@@ -97,6 +98,8 @@ export async function createCheckoutSession(request: CheckoutRequest): Promise<s
     "line_items[0][price_data][product_data][description]": `TapDine offer at ${request.venueName}`,
     "metadata[venue_id]": request.venueId,
     "metadata[offer_id]": request.offerId,
+    "metadata[offer_title]": request.offerTitle.slice(0, 450),
+    "metadata[claim_code]": request.claimCode,
   };
 
   if (request.offerImage && /^https?:\/\//.test(request.offerImage)) {
@@ -124,4 +127,72 @@ export async function createCheckoutSession(request: CheckoutRequest): Promise<s
     throw new Error(payload.error?.message ?? "Stripe could not start this payment.");
   }
   return payload.url;
+}
+
+/* ---------------- Transaction logging (no personal data) ---------------- */
+
+function adminDb() {
+  const rawUrl = process.env["TAPDINE_SUPABASE_URL"];
+  const key = process.env["TAPDINE_SUPABASE_SERVICE_ROLE_KEY"];
+  if (!rawUrl || !key) return null;
+  const url = rawUrl.trim().replace(/\/+$/, "").replace(/\/rest\/v1$/, "");
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (key.startsWith("sb_") && headers.get("Authorization") === `Bearer ${key}`) {
+          headers.delete("Authorization");
+        }
+        headers.set("apikey", key);
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
+}
+
+interface StripeSession {
+  id: string;
+  payment_status?: string;
+  amount_total?: number | null;
+  payment_intent?: string | null;
+  metadata?: Record<string, string>;
+}
+
+/** Verifies a Checkout Session with Stripe and logs the paid claim once. */
+export async function recordPaidClaim(sessionId: string, code: string): Promise<boolean> {
+  const secret = process.env["STRIPE_SECRET_KEY"];
+  const db = adminDb();
+  if (!secret || !db) return false;
+
+  const res = await fetch(`${STRIPE_API}/checkout/sessions/${encodeURIComponent(sessionId)}`, {
+    headers: { Authorization: `Bearer ${secret}` },
+  });
+  if (!res.ok) return false;
+  const session = (await res.json()) as StripeSession;
+  const meta = session.metadata ?? {};
+  if (session.payment_status !== "paid" || meta["claim_code"] !== code) return false;
+
+  const amountPence = session.amount_total ?? 0;
+  const partner = await fetchPartnerPayoutAccount(meta["venue_id"] ?? "");
+  const rate = partner?.commissionRate ?? DEFAULT_COMMISSION_RATE;
+
+  const { error } = await db.from("transactions").upsert(
+    {
+      partner_id: meta["venue_id"],
+      offer_id: meta["offer_id"],
+      offer_title: meta["offer_title"] ?? null,
+      claim_code: code,
+      amount: amountPence / 100,
+      commission_amount: Math.round(amountPence * rate) / 100,
+      currency: "gbp",
+      status: "paid",
+      stripe_session_id: session.id,
+      stripe_payment_intent: session.payment_intent ?? null,
+      paid_at: new Date().toISOString(),
+    },
+    { onConflict: "stripe_session_id", ignoreDuplicates: true },
+  );
+  if (error) console.error("TapDine transaction log failed:", error.message);
+  return !error;
 }

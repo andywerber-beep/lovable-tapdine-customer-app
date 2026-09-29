@@ -68,8 +68,21 @@ export const startOfferCheckout = createServerFn({ method: "POST" })
       offerTitle: offer.title,
       offerImage: offer.image_url,
       amountPence: Math.round(price * 100),
-      successUrl: `${data.origin}/venue/${venue.id}?pass=${encodeURIComponent(data.code)}`,
+      claimCode: data.code,
+      successUrl: `${data.origin}/venue/${venue.id}?pass=${encodeURIComponent(data.code)}&session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${data.origin}/venue/${venue.id}`,
     });
     return { mode: "stripe", url };
+  });
+
+/** Called when the customer returns from Stripe: verifies payment and logs the claim. */
+export const confirmPaidClaim = createServerFn({ method: "POST" })
+  .inputValidator((input: { sessionId: string; code: string }) => ({
+    sessionId: String(input.sessionId).slice(0, 200),
+    code: String(input.code).slice(0, 40),
+  }))
+  .handler(async ({ data }) => {
+    if (!data.sessionId.startsWith("cs_")) return { logged: false };
+    const { recordPaidClaim } = await import("./checkout.server");
+    return { logged: await recordPaidClaim(data.sessionId, data.code) };
   });
