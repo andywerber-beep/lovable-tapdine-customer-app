@@ -99,6 +99,52 @@ function VenuePage() {
   const { id } = Route.useParams();
   const { data: venue } = useSuspenseQuery(venueQuery(id));
   const offers = activeOffers(venue);
+  const [pass, setPass] = useState<ClaimPass | null>(null);
+  const [pendingOffer, setPendingOffer] = useState<string | null>(null);
+
+  // Returning from the Stripe payment page: reopen the pass that was paid for.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("pass");
+    if (!code) return;
+    const saved = findPass(code);
+    if (saved) setPass(saved);
+    window.history.replaceState(null, "", window.location.pathname);
+  }, []);
+
+  const claimOffer = async (offer: Offer) => {
+    setPendingOffer(String(offer.id));
+    const code = makeClaimCode(venue.name);
+    const draft: ClaimPass = {
+      code,
+      venueId: venue.id,
+      venueName: venue.name,
+      offerId: String(offer.id),
+      offerTitle: offer.title,
+      price: offer.discount_price,
+      paidAt: Date.now(),
+      demo: false,
+    };
+    try {
+      const result = await startOfferCheckout({
+        data: { venueId: venue.id, offerId: String(offer.id), code, origin: window.location.origin },
+      });
+      if (result.mode === "stripe") {
+        savePass(draft);
+        window.location.href = result.url;
+        return;
+      }
+      const demoPass = { ...draft, demo: true, paidAt: Date.now() };
+      savePass(demoPass);
+      setPass(demoPass);
+      toast.info(result.reason);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Payment could not be started.");
+    } finally {
+      setPendingOffer(null);
+    }
+  };
+
+
 
   return (
     <Shell>
