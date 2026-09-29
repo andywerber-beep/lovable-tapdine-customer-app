@@ -177,9 +177,12 @@ export async function recordPaidClaim(sessionId: string, code: string): Promise<
   const partner = await fetchPartnerPayoutAccount(meta["venue_id"] ?? "");
   const rate = partner?.commissionRate ?? DEFAULT_COMMISSION_RATE;
 
+  // The live table's partner_id column is a UUID type; venue IDs are numeric,
+  // so claims are keyed by venue_id (bigint) instead.
+  const venueId = Number(meta["venue_id"]);
   const { error } = await db.from("transactions").upsert(
     {
-      partner_id: meta["venue_id"],
+      venue_id: Number.isFinite(venueId) ? venueId : null,
       offer_id: meta["offer_id"],
       offer_title: meta["offer_title"] ?? null,
       claim_code: code,
