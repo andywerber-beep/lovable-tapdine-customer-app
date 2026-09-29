@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { ClaimPassCard } from "@/components/tapdine/ClaimPassCard";
 import { HygieneBadge } from "@/components/tapdine/HygieneBadge";
 import { findPass, makeClaimCode, savePass, type ClaimPass } from "@/lib/claim-pass";
-import { getVenue, startOfferCheckout } from "@/lib/tapdine.functions";
+import { confirmPaidClaim, getVenue, startOfferCheckout } from "@/lib/tapdine.functions";
 import { activeOffers, formatPrice, venueAddress, type Offer, type Venue } from "@/lib/tapdine-types";
 
 
@@ -108,6 +108,8 @@ function VenuePage() {
     if (!code) return;
     const saved = findPass(code);
     if (saved) setPass(saved);
+    const sessionId = new URLSearchParams(window.location.search).get("session_id");
+    if (sessionId) void confirmPaidClaim({ data: { sessionId, code } }).catch(() => undefined);
     window.history.replaceState(null, "", window.location.pathname);
   }, []);
 
