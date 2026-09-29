@@ -225,6 +225,25 @@ function VenuePage() {
                       {offer.description}
                     </p>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => void claimOffer(offer)}
+                    disabled={pendingOffer !== null}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold text-primary-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
+                  >
+                    {pendingOffer === String(offer.id) ? (
+                      <Loader2 className="size-5 animate-spin" />
+                    ) : (
+                      <Wallet className="size-5" />
+                    )}
+                    {formatPrice(offer.discount_price)
+                      ? `Tap & pay ${formatPrice(offer.discount_price)}`
+                      : "Claim this deal"}
+                  </button>
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
+                    Pay with Apple Pay, Google Pay or card, then show your pass to staff.
+                  </p>
                 </div>
               </li>
             ))}
@@ -232,6 +251,8 @@ function VenuePage() {
           </ul>
         )}
       </section>
+
+      {pass && <ClaimPassCard pass={pass} onClose={() => setPass(null)} />}
     </Shell>
   );
 }
