@@ -21,6 +21,10 @@ create unique index if not exists transactions_stripe_session_key on public.tran
 create index if not exists transactions_venue_idx on public.transactions (venue_id, created_at desc);
 create index if not exists transactions_partner_idx on public.transactions (partner_id, created_at desc);
 
+-- partner_id was built for a UUID-based venue reference; the app now logs
+-- claims by numeric venue_id, so partner_id becomes optional.
+alter table public.transactions alter column partner_id drop not null;
+
 -- Only trusted server code (service role) writes claims; customers cannot insert fake rows.
 grant all on public.transactions to service_role;
 alter table public.transactions enable row level security;
