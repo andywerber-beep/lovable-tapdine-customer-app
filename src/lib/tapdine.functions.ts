@@ -26,3 +26,50 @@ export const getVenue = createServerFn({ method: "GET" })
     const { fetchVenue } = await import("./tapdine.server");
     return fetchVenue(data.id);
   });
+
+export type CheckoutStart =
+  | { mode: "stripe"; url: string }
+  | { mode: "demo"; reason: string };
+
+/**
+ * Starts payment for one offer. Falls back to a test claim (no card charged)
+ * for demo venues or while Stripe is not connected yet.
+ */
+export const startOfferCheckout = createServerFn({ method: "POST" })
+  .inputValidator((input: { venueId: string; offerId: string; code: string; origin: string }) => ({
+    venueId: String(input.venueId),
+    offerId: String(input.offerId),
+    code: String(input.code),
+    origin: String(input.origin),
+  }))
+  .handler(async ({ data }): Promise<CheckoutStart> => {
+    const demoVenue = getDemoVenue(data.venueId);
+    if (demoVenue) return { mode: "demo", reason: "This is a demo venue, so no card is charged." };
+
+    if (!process.env["STRIPE_SECRET_KEY"]) {
+      return { mode: "demo", reason: "Card payments are not switched on yet." };
+    }
+
+    const { fetchVenue } = await import("./tapdine.server");
+    const venue = await fetchVenue(data.venueId);
+    const offer = venue?.offers.find((item) => String(item.id) === data.offerId);
+    if (!venue || !offer) throw new Error("This offer is no longer available.");
+
+    const price = Number(offer.discount_price);
+    if (!Number.isFinite(price) || price <= 0) {
+      return { mode: "demo", reason: "This offer has no price set, so nothing is charged." };
+    }
+
+    const { createCheckoutSession } = await import("./checkout.server");
+    const url = await createCheckoutSession({
+      venueId: venue.id,
+      venueName: venue.name,
+      offerId: String(offer.id),
+      offerTitle: offer.title,
+      offerImage: offer.image_url,
+      amountPence: Math.round(price * 100),
+      successUrl: `${data.origin}/venue/${venue.id}?pass=${encodeURIComponent(data.code)}`,
+      cancelUrl: `${data.origin}/venue/${venue.id}`,
+    });
+    return { mode: "stripe", url };
+  });

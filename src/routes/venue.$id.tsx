@@ -1,11 +1,17 @@
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Clock3, MapPin, Phone, Utensils } from "lucide-react";
-import type { ReactNode } from "react";
+import { ArrowLeft, Clock3, Loader2, MapPin, Phone, Utensils, Wallet } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
+import { ClaimPassCard } from "@/components/tapdine/ClaimPassCard";
 import { HygieneBadge } from "@/components/tapdine/HygieneBadge";
-import { getVenue } from "@/lib/tapdine.functions";
-import { activeOffers, formatPrice, venueAddress, type Venue } from "@/lib/tapdine-types";
+import { findPass, makeClaimCode, savePass, type ClaimPass } from "@/lib/claim-pass";
+import { getVenue, startOfferCheckout } from "@/lib/tapdine.functions";
+import { activeOffers, formatPrice, venueAddress, type Offer, type Venue } from "@/lib/tapdine-types";
+
+
+
 
 
 
@@ -93,6 +99,52 @@ function VenuePage() {
   const { id } = Route.useParams();
   const { data: venue } = useSuspenseQuery(venueQuery(id));
   const offers = activeOffers(venue);
+  const [pass, setPass] = useState<ClaimPass | null>(null);
+  const [pendingOffer, setPendingOffer] = useState<string | null>(null);
+
+  // Returning from the Stripe payment page: reopen the pass that was paid for.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("pass");
+    if (!code) return;
+    const saved = findPass(code);
+    if (saved) setPass(saved);
+    window.history.replaceState(null, "", window.location.pathname);
+  }, []);
+
+  const claimOffer = async (offer: Offer) => {
+    setPendingOffer(String(offer.id));
+    const code = makeClaimCode(venue.name);
+    const draft: ClaimPass = {
+      code,
+      venueId: venue.id,
+      venueName: venue.name,
+      offerId: String(offer.id),
+      offerTitle: offer.title,
+      price: offer.discount_price,
+      paidAt: Date.now(),
+      demo: false,
+    };
+    try {
+      const result = await startOfferCheckout({
+        data: { venueId: venue.id, offerId: String(offer.id), code, origin: window.location.origin },
+      });
+      if (result.mode === "stripe") {
+        savePass(draft);
+        window.location.href = result.url;
+        return;
+      }
+      const demoPass = { ...draft, demo: true, paidAt: Date.now() };
+      savePass(demoPass);
+      setPass(demoPass);
+      toast.info(result.reason);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Payment could not be started.");
+    } finally {
+      setPendingOffer(null);
+    }
+  };
+
+
 
   return (
     <Shell>
@@ -173,6 +225,25 @@ function VenuePage() {
                       {offer.description}
                     </p>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => void claimOffer(offer)}
+                    disabled={pendingOffer !== null}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold text-primary-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
+                  >
+                    {pendingOffer === String(offer.id) ? (
+                      <Loader2 className="size-5 animate-spin" />
+                    ) : (
+                      <Wallet className="size-5" />
+                    )}
+                    {formatPrice(offer.discount_price)
+                      ? `Tap & pay ${formatPrice(offer.discount_price)}`
+                      : "Claim this deal"}
+                  </button>
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
+                    Pay with Apple Pay, Google Pay or card, then show your pass to staff.
+                  </p>
                 </div>
               </li>
             ))}
@@ -180,6 +251,8 @@ function VenuePage() {
           </ul>
         )}
       </section>
+
+      {pass && <ClaimPassCard pass={pass} onClose={() => setPass(null)} />}
     </Shell>
   );
 }
