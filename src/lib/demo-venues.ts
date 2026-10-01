@@ -1,12 +1,21 @@
-import cafeImage from "@/assets/demo-brighton-cafe.jpg";
-import pizzaImage from "@/assets/demo-brighton-pizza.jpg";
-import burgerImage from "@/assets/demo-brighton-burger.jpg";
-import streetFoodImage from "@/assets/demo-brighton-street-food.jpg";
-import worthingCafeImage from "@/assets/demo-worthing-cafe.jpg";
-import worthingSeafoodImage from "@/assets/demo-worthing-seafood.jpg";
-import worthingAvocadoImage from "@/assets/demo-worthing-avocado.jpg";
-import worthingFrenchToastImage from "@/assets/demo-worthing-frenchtoast.jpg";
-import worthingFishChipsImage from "@/assets/demo-worthing-fishchips.jpg";
+import cafeImageAsset from "@/assets/demo-brighton-cafe.jpg.asset.json";
+const cafeImage = cafeImageAsset.url;
+import pizzaImageAsset from "@/assets/demo-brighton-pizza.jpg.asset.json";
+const pizzaImage = pizzaImageAsset.url;
+import burgerImageAsset from "@/assets/demo-brighton-burger.jpg.asset.json";
+const burgerImage = burgerImageAsset.url;
+import streetFoodImageAsset from "@/assets/demo-brighton-street-food.jpg.asset.json";
+const streetFoodImage = streetFoodImageAsset.url;
+import worthingCafeImageAsset from "@/assets/demo-worthing-cafe.jpg.asset.json";
+const worthingCafeImage = worthingCafeImageAsset.url;
+import worthingSeafoodImageAsset from "@/assets/demo-worthing-seafood.jpg.asset.json";
+const worthingSeafoodImage = worthingSeafoodImageAsset.url;
+import worthingAvocadoImageAsset from "@/assets/demo-worthing-avocado.jpg.asset.json";
+const worthingAvocadoImage = worthingAvocadoImageAsset.url;
+import worthingFrenchToastImageAsset from "@/assets/demo-worthing-frenchtoast.jpg.asset.json";
+const worthingFrenchToastImage = worthingFrenchToastImageAsset.url;
+import worthingFishChipsImageAsset from "@/assets/demo-worthing-fishchips.jpg.asset.json";
+const worthingFishChipsImage = worthingFishChipsImageAsset.url;
 
 import type { Venue } from "./tapdine-types";
 
