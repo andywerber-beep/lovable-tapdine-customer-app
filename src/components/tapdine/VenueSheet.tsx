@@ -198,7 +198,7 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
         </div>
       </div>
 
-      {pass && <ClaimPassCard pass={pass} onClose={() => setPass(null)} />}
+      {pass && <ClaimPassCard pass={pass} onClose={() => setPass(null)} onChange={setPass} />}
     </div>
   );
 }

@@ -1,7 +1,16 @@
-import { BadgeCheck, Clock3, X } from "lucide-react";
+import { BadgeCheck, Clock3, Loader2, Lock, Undo2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { CLAIM_WINDOW_MINUTES, expiresAt, type ClaimPass } from "@/lib/claim-pass";
+import { toast } from "sonner";
+
+import {
+  CANCEL_WINDOW_SECONDS,
+  CLAIM_WINDOW_MINUTES,
+  expiresAt,
+  savePass,
+  type ClaimPass,
+} from "@/lib/claim-pass";
+import { cancelPaidClaim } from "@/lib/tapdine.functions";
 import { formatPrice } from "@/lib/tapdine-types";
 
 function useCountdown(target: number) {
@@ -15,11 +24,43 @@ function useCountdown(target: number) {
   return remaining;
 }
 
-export function ClaimPassCard({ pass, onClose }: { pass: ClaimPass; onClose: () => void }) {
+export function ClaimPassCard({
+  pass,
+  onClose,
+  onChange,
+}: {
+  pass: ClaimPass;
+  onClose: () => void;
+  onChange?: (pass: ClaimPass) => void;
+}) {
   const remaining = useCountdown(expiresAt(pass));
+  const cancelLeft = useCountdown(pass.paidAt + CANCEL_WINDOW_SECONDS * 1000);
+  const [cancelling, setCancelling] = useState(false);
+  const canCancel = !pass.cancelled && cancelLeft > 0;
+  const cancelSecs = Math.ceil(cancelLeft / 1000);
+
+  const cancel = async () => {
+    setCancelling(true);
+    try {
+      if (!pass.demo) {
+        if (!pass.sessionId) throw new Error("This pass can't be cancelled from this device.");
+        const result = await cancelPaidClaim({ data: { sessionId: pass.sessionId, code: pass.code } });
+        if (!result.ok) throw new Error(result.reason ?? "Refund could not be processed.");
+      }
+      const next = { ...pass, cancelled: true };
+      savePass(next);
+      onChange?.(next);
+      toast.success(pass.demo ? "Test pass cancelled." : "Cancelled — full refund on its way.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Refund could not be processed.");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const minutes = Math.floor(remaining / 60000);
   const seconds = Math.floor((remaining % 60000) / 1000);
-  const expired = remaining <= 0;
+  const expired = remaining <= 0 || !!pass.cancelled;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/50 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-10 backdrop-blur-sm sm:items-center">
@@ -31,7 +72,7 @@ export function ClaimPassCard({ pass, onClose }: { pass: ClaimPass; onClose: () 
       >
         <div className="flex items-center justify-between gap-3 bg-primary px-5 py-4 text-primary-foreground">
           <span className="inline-flex items-center gap-2 text-sm font-extrabold">
-            <BadgeCheck className="size-5" /> {expired ? "Pass expired" : "Paid · Pass live"}
+            <BadgeCheck className="size-5" /> {pass.cancelled ? "Pass cancelled" : expired ? "Pass expired" : "Paid · Pass live"}
           </span>
           <button
             type="button"
@@ -57,17 +98,46 @@ export function ClaimPassCard({ pass, onClose }: { pass: ClaimPass; onClose: () 
             }`}
           >
             <Clock3 className="size-4" />
-            {expired
+            {pass.cancelled
+              ? "Cancelled · refunded"
+              : expired
               ? "No longer valid"
               : `${minutes}:${String(seconds).padStart(2, "0")} left to redeem`}
           </div>
+
+          {canCancel ? (
+            <div className="mt-5 rounded-2xl border border-border px-4 py-3 text-left">
+              <p className="text-xs text-muted-foreground">
+                Accidental tap? Cancel within{" "}
+                <strong className="text-foreground">
+                  {Math.floor(cancelSecs / 60)}:{String(cancelSecs % 60).padStart(2, "0")}
+                </strong>{" "}
+                for a full refund.
+              </p>
+              <button
+                type="button"
+                onClick={() => void cancel()}
+                disabled={cancelling}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 px-4 py-2.5 text-sm font-extrabold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
+              >
+                {cancelling ? <Loader2 className="size-4 animate-spin" /> : <Undo2 className="size-4" />}
+                Cancel &amp; refund
+              </button>
+            </div>
+          ) : (
+            !pass.cancelled && (
+              <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                <Lock className="size-3.5" /> Order confirmed with venue · Non-refundable
+              </p>
+            )
+          )}
 
           <div className="mt-7 space-y-1 border-t border-border pt-5 text-left">
             <p className="font-display text-xl font-bold">{pass.offerTitle}</p>
             <p className="text-sm text-muted-foreground">{pass.venueName}</p>
             {formatPrice(pass.price) && (
               <p className="pt-2 text-sm font-bold">
-                Paid {formatPrice(pass.price)}
+                {pass.cancelled ? "Refunded" : "Paid"} {formatPrice(pass.price)}
                 {pass.demo && " · test run, no money taken"}
               </p>
             )}
