@@ -1,8 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, MapPin, Sparkles, X } from "lucide-react";
+import { ArrowRight, Loader2, MapPin, Sparkles, Wallet, X } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
+import { ClaimPassCard } from "@/components/tapdine/ClaimPassCard";
 import { HygieneBadge } from "@/components/tapdine/HygieneBadge";
-import { activeOffers, distanceKm, formatPrice, type Venue } from "@/lib/tapdine-types";
+import { makeClaimCode, savePass, type ClaimPass } from "@/lib/claim-pass";
+import { startOfferCheckout } from "@/lib/tapdine.functions";
+import { activeOffers, distanceKm, formatPrice, type Offer, type Venue } from "@/lib/tapdine-types";
 
 import type { Coords } from "@/hooks/useGeolocation";
 
@@ -14,11 +19,46 @@ interface VenueSheetProps {
 
 export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
   const offers = activeOffers(venue);
-  const offer = offers[0];
+  const [activeCard, setActiveCard] = useState(0);
+  const [pendingOffer, setPendingOffer] = useState<string | null>(null);
+  const [pass, setPass] = useState<ClaimPass | null>(null);
   const away =
     userLocation && venue.latitude != null && venue.longitude != null
       ? distanceKm(userLocation, { latitude: venue.latitude, longitude: venue.longitude })
       : null;
+
+  const claimOffer = async (offer: Offer) => {
+    setPendingOffer(String(offer.id));
+    const code = makeClaimCode(venue.name);
+    const draft: ClaimPass = {
+      code,
+      venueId: venue.id,
+      venueName: venue.name,
+      offerId: String(offer.id),
+      offerTitle: offer.title,
+      price: offer.discount_price,
+      paidAt: Date.now(),
+      demo: false,
+    };
+    try {
+      const result = await startOfferCheckout({
+        data: { venueId: venue.id, offerId: String(offer.id), code, origin: window.location.origin },
+      });
+      if (result.mode === "stripe") {
+        savePass(draft);
+        window.location.href = result.url;
+        return;
+      }
+      const demoPass = { ...draft, demo: true, paidAt: Date.now() };
+      savePass(demoPass);
+      setPass(demoPass);
+      toast.info(result.reason);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Payment could not be started.");
+    } finally {
+      setPendingOffer(null);
+    }
+  };
 
   return (
     <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 animate-in slide-in-from-bottom-8 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] duration-500">
@@ -26,47 +66,115 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
         className="mx-auto max-w-xl overflow-hidden rounded-3xl border border-border bg-surface/95 backdrop-blur-xl"
         style={{ boxShadow: "var(--shadow-lift)" }}
       >
-        {offer?.image_url && (
-          <div className="relative h-36 overflow-hidden sm:h-44">
-            <img src={offer.image_url} alt={offer.title} width={1200} height={720} className="size-full object-cover" />
-            <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1.5 text-xs font-extrabold text-gold-foreground shadow-sm">
-              <Sparkles className="size-3.5" /> {offer.discount_type || "Live deal"}
-            </span>
-            <button type="button" onClick={onClose} aria-label="Close venue" className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-surface/95 text-foreground shadow-sm">
-              <X className="size-4" />
-            </button>
+        <div className="flex items-start gap-3 px-5 pt-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-primary">
+              <span className="truncate">{venue.cuisine_type ?? "Restaurant"}</span>
+              {away != null && <span>· {away.toFixed(1)} km away</span>}
+            </div>
+            <h2 className="mt-1 font-display text-2xl font-bold leading-tight">{venue.name}</h2>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <MapPin className="size-3.5 text-primary" /> {venue.town ?? "Nearby"}
+              </span>
+              <HygieneBadge venue={venue} />
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close venue"
+            className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-foreground"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {offers.length > 0 && (
+          <ul
+            onScroll={(event) => {
+              const el = event.currentTarget;
+              const first = el.firstElementChild as HTMLElement | null;
+              const step = (first?.offsetWidth ?? el.clientWidth) + 12;
+              setActiveCard(Math.min(Math.round(el.scrollLeft / step), offers.length - 1));
+            }}
+            className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {offers.map((offer) => {
+              const price = formatPrice(offer.discount_price);
+              return (
+                <li
+                  key={offer.id}
+                  className={`${offers.length > 1 ? "w-[82%]" : "w-full"} shrink-0 snap-center overflow-hidden rounded-2xl border border-primary/15 bg-surface`}
+                >
+                  {offer.image_url && (
+                    <div className="relative">
+                      <img
+                        src={offer.image_url}
+                        alt={offer.title}
+                        width={1200}
+                        height={720}
+                        className="aspect-[16/8] w-full object-cover"
+                      />
+                      <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-1 text-[11px] font-extrabold text-gold-foreground shadow-sm">
+                        <Sparkles className="size-3" /> {offer.discount_type || "Live deal"}
+                      </span>
+                    </div>
+                  )}
+                  <div className="p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="line-clamp-2 text-sm font-bold leading-snug">{offer.title}</h3>
+                      {price && <span className="shrink-0 font-display text-lg font-extrabold text-primary">{price}</span>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void claimOffer(offer)}
+                      disabled={pendingOffer !== null}
+                      className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-extrabold text-primary-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
+                    >
+                      {pendingOffer === String(offer.id) ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Wallet className="size-4" />
+                      )}
+                      {price ? `Tap & pay ${price}` : "Claim this deal"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
 
-        <div>
-          <div className="flex items-start gap-3 px-5 pt-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-xs font-bold text-primary">
-                <span className="truncate">{venue.cuisine_type ?? "Restaurant"}</span>
-                {away != null && <span>· {away.toFixed(1)} km away</span>}
+        <div className="flex items-center justify-between gap-3 px-5 pb-4 pt-3">
+          {offers.length > 1 ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                {offers.map((offer, index) => (
+                  <span
+                    key={offer.id}
+                    className={`h-2 rounded-full transition-all ${index === activeCard ? "w-5 bg-primary" : "w-2 bg-primary/25"}`}
+                  />
+                ))}
               </div>
-              <h2 className="mt-1 font-display text-2xl font-bold leading-tight">{venue.name}</h2>
-              <p className="mt-1 line-clamp-1 text-sm font-semibold text-muted-foreground">{offer?.title ?? "Live offer"}</p>
+              <span className="text-xs font-semibold text-muted-foreground">
+                Swipe · {activeCard + 1} of {offers.length}
+              </span>
             </div>
-            {formatPrice(offer?.discount_price ?? null) && <span className="shrink-0 font-display text-2xl font-extrabold text-primary">{formatPrice(offer?.discount_price ?? null)}</span>}
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2 px-5">
-            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="size-3.5 text-primary" /> {venue.town ?? "Nearby"}</span>
-            <HygieneBadge venue={venue} />
-          </div>
-
-          <div className="mt-4 px-5 pb-5">
-            <Link
-              to="/venue/$id"
-              params={{ id: venue.id }}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3.5 font-bold text-primary-foreground transition-transform hover:scale-[1.01]"
-            >
-              {offers.length > 0 ? "View deals & pay" : "View details"} <ArrowRight className="size-4" />
-            </Link>
-          </div>
+          ) : (
+            <span />
+          )}
+          <Link
+            to="/venue/$id"
+            params={{ id: venue.id }}
+            className="inline-flex items-center gap-1 text-xs font-bold text-primary"
+          >
+            Venue details <ArrowRight className="size-3.5" />
+          </Link>
         </div>
       </div>
+
+      {pass && <ClaimPassCard pass={pass} onClose={() => setPass(null)} />}
     </div>
   );
 }
