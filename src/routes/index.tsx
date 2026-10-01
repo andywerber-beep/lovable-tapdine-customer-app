@@ -45,12 +45,13 @@ export const Route = createFileRoute("/")({
   errorComponent: RadarError,
 });
 
-function RadarError({ error }: { error: Error }) {
+function RadarError({ error }: { error: unknown }) {
+  const message = error instanceof Error ? error.message : String(error);
   return (
     <main className="grid min-h-screen place-items-center bg-background px-6 text-center">
       <div className="max-w-sm">
         <h1 className="font-display text-2xl font-semibold text-ember">Radar offline</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{message}</p>
       </div>
     </main>
   );

@@ -73,12 +73,13 @@ function BackLink() {
   );
 }
 
-function VenueError({ error }: { error: Error }) {
+function VenueError({ error }: { error: unknown }) {
+  const message = error instanceof Error ? error.message : String(error);
   return (
     <Shell>
       <BackLink />
       <h1 className="mt-8 font-display text-2xl font-semibold text-ember">Lookbook unavailable</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{message}</p>
     </Shell>
   );
 }
