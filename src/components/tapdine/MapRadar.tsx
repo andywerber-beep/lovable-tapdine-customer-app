@@ -133,8 +133,13 @@ export default function MapRadar({
                 className={`group flex min-h-11 items-center gap-2 rounded-full border-2 border-surface bg-gold py-1 pl-1 pr-3 text-gold-foreground transition-transform duration-200 ${isSelected ? "scale-110" : "hover:scale-105"}`}
                 style={isSelected ? { boxShadow: "var(--shadow-ember)" } : undefined}
               >
-                <span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
-                  {live ? offers.length : "•"}
+                <span className="relative grid size-8 shrink-0 place-items-center">
+                  {live && (
+                    <span className="absolute inset-0 animate-ping rounded-full bg-primary/50" />
+                  )}
+                  <span className="relative grid size-8 place-items-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
+                    {live ? offers.length : "•"}
+                  </span>
                 </span>
                 <span className="max-w-[9rem] truncate text-xs font-bold">
                   {venue.name}
