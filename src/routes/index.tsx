@@ -147,8 +147,7 @@ function RadarPage() {
       />
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        {(
-          <div className="pointer-events-auto mx-auto max-w-xl space-y-3">
+        <div className="pointer-events-auto mx-auto max-w-xl space-y-3">
             <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface/95 px-4 py-2 shadow-sm backdrop-blur-xl">
               <TapDineBrand />
               {showingDemo && <span className="rounded-full bg-gold px-3 py-1 text-[11px] font-extrabold text-gold-foreground">DEMO MAP</span>}
