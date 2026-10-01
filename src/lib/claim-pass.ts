@@ -14,6 +14,8 @@ export interface ClaimPass {
   sessionId?: string;
   /** Set once the customer cancels and is refunded. */
   cancelled?: boolean;
+  /** Set once venue staff mark the order served (epoch ms). */
+  servedAt?: number;
 }
 
 /** Seconds after payment during which an accidental tap can be cancelled. */

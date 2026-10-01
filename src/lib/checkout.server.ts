@@ -263,6 +263,7 @@ export async function refundPaidClaim(
 /** Reads whether venue staff have marked a paid claim as served. */
 export async function fetchClaimStatus(sessionId: string, code: string) {
   const db = adminDb();
+  if (!db) return { redeemed: false, redeemedAt: null, refunded: false };
   const { data } = await db
     .from("transactions")
     .select("status, redeemed, redeemed_at")
