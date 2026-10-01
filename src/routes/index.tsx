@@ -175,8 +175,7 @@ function RadarPage() {
                 <Compass className="size-5" />
               </button>
             </form>
-          </div>
-        )}
+        </div>
       </header>
 
       {!selectedVenue && (
