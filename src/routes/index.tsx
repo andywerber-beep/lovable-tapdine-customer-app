@@ -5,7 +5,6 @@ import { Compass, Loader2, Search } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 
 import { InstallButton } from "@/components/tapdine/InstallButton";
-import { ProximityBanner } from "@/components/tapdine/ProximityBanner";
 import { TapDineBrand } from "@/components/tapdine/TapDineBrand";
 import { VenueSheet } from "@/components/tapdine/VenueSheet";
 import { useGeolocation } from "@/hooks/useGeolocation";
