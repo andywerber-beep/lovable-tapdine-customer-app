@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Loader2, MapPin, Sparkles, Wallet, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, ChevronLeft, ChevronRight, Loader2, MapPin, Sparkles, Wallet, X } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ClaimPassCard } from "@/components/tapdine/ClaimPassCard";
@@ -22,6 +22,14 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
   const [activeCard, setActiveCard] = useState(0);
   const [pendingOffer, setPendingOffer] = useState<string | null>(null);
   const [pass, setPass] = useState<ClaimPass | null>(null);
+  const railRef = useRef<HTMLUListElement>(null);
+  const goTo = (index: number) => {
+    const el = railRef.current;
+    const card = el?.children[index] as HTMLElement | undefined;
+    if (!el || !card) return;
+    el.scrollTo({ left: card.offsetLeft - el.offsetLeft - 20, behavior: "smooth" });
+    setActiveCard(index);
+  };
   const away =
     userLocation && venue.latitude != null && venue.longitude != null
       ? distanceKm(userLocation, { latitude: venue.latitude, longitude: venue.longitude })
@@ -91,14 +99,16 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
         </div>
 
         {offers.length > 0 && (
+          <div className="relative">
           <ul
+            ref={railRef}
             onScroll={(event) => {
               const el = event.currentTarget;
               const first = el.firstElementChild as HTMLElement | null;
               const step = (first?.offsetWidth ?? el.clientWidth) + 12;
               setActiveCard(Math.min(Math.round(el.scrollLeft / step), offers.length - 1));
             }}
-            className="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="mt-3 flex snap-x snap-mandatory gap-3 touch-pan-x overflow-x-auto overscroll-x-contain scroll-px-5 px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {offers.map((offer) => {
               const price = formatPrice(offer.discount_price);
@@ -144,6 +154,17 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
               );
             })}
           </ul>
+          {offers.length > 1 && activeCard > 0 && (
+            <button type="button" aria-label="Previous deal" onClick={() => goTo(activeCard - 1)} className="absolute left-1.5 top-[30%] grid size-9 place-items-center rounded-full bg-surface/95 text-foreground shadow-md">
+              <ChevronLeft className="size-5" />
+            </button>
+          )}
+          {offers.length > 1 && activeCard < offers.length - 1 && (
+            <button type="button" aria-label="Next deal" onClick={() => goTo(activeCard + 1)} className="absolute right-1.5 top-[30%] grid size-9 place-items-center rounded-full bg-surface/95 text-foreground shadow-md">
+              <ChevronRight className="size-5" />
+            </button>
+          )}
+          </div>
         )}
 
         <div className="flex items-center justify-between gap-3 px-5 pb-4 pt-3">
@@ -151,7 +172,10 @@ export function VenueSheet({ venue, userLocation, onClose }: VenueSheetProps) {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5">
                 {offers.map((offer, index) => (
-                  <span
+                  <button
+                    type="button"
+                    aria-label={`Show deal ${index + 1}`}
+                    onClick={() => goTo(index)}
                     key={offer.id}
                     className={`h-2 rounded-full transition-all ${index === activeCard ? "w-5 bg-primary" : "w-2 bg-primary/25"}`}
                   />
