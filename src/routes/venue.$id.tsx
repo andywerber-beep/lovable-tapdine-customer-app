@@ -101,6 +101,7 @@ function VenuePage() {
   const offers = activeOffers(venue);
   const [pass, setPass] = useState<ClaimPass | null>(null);
   const [pendingOffer, setPendingOffer] = useState<string | null>(null);
+  const [activeCard, setActiveCard] = useState(0);
 
   // Returning from the Stripe payment page: reopen the pass that was paid for.
   useEffect(() => {
