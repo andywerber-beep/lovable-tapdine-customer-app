@@ -4,6 +4,9 @@ import burgerImage from "@/assets/demo-brighton-burger.jpg";
 import streetFoodImage from "@/assets/demo-brighton-street-food.jpg";
 import worthingCafeImage from "@/assets/demo-worthing-cafe.jpg";
 import worthingSeafoodImage from "@/assets/demo-worthing-seafood.jpg";
+import worthingAvocadoImage from "@/assets/demo-worthing-avocado.jpg";
+import worthingFrenchToastImage from "@/assets/demo-worthing-frenchtoast.jpg";
+import worthingFishChipsImage from "@/assets/demo-worthing-fishchips.jpg";
 
 import type { Venue } from "./tapdine-types";
 
