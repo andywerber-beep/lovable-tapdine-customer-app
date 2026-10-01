@@ -106,24 +106,19 @@ export function ClaimPassCard({
           </div>
 
           {canCancel ? (
-            <div className="mt-5 rounded-2xl border border-border px-4 py-3 text-left">
-              <p className="text-xs text-muted-foreground">
-                Accidental tap? Cancel within{" "}
-                <strong className="text-foreground">
-                  {Math.floor(cancelSecs / 60)}:{String(cancelSecs % 60).padStart(2, "0")}
-                </strong>{" "}
-                for a full refund.
-              </p>
+            <p className="mt-4 text-xs text-muted-foreground">
+              Accidental tap?{" "}
               <button
                 type="button"
                 onClick={() => void cancel()}
                 disabled={cancelling}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/40 px-4 py-2.5 text-sm font-extrabold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
+                className="inline-flex items-center gap-1 font-semibold text-destructive underline underline-offset-2 transition-opacity hover:opacity-80 disabled:opacity-60"
               >
-                {cancelling ? <Loader2 className="size-4 animate-spin" /> : <Undo2 className="size-4" />}
-                Cancel &amp; refund
-              </button>
-            </div>
+                {cancelling ? <Loader2 className="size-3 animate-spin" /> : <Undo2 className="size-3" />}
+                Cancel for a full refund
+              </button>{" "}
+              within {cancelSecs}s.
+            </p>
           ) : (
             !pass.cancelled && (
               <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">

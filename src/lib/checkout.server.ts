@@ -204,9 +204,9 @@ export async function recordPaidClaim(sessionId: string, code: string): Promise<
 }
 
 /** Seconds after payment during which a customer may cancel for a full refund. */
-export const CANCEL_WINDOW_SECONDS = 120;
+export const CANCEL_WINDOW_SECONDS = 60;
 
-/** Refunds a paid claim if still inside the 2-minute window (checked against Stripe's own payment time). */
+/** Refunds a paid claim if still inside the 60-second window (checked against Stripe's own payment time). */
 export async function refundPaidClaim(
   sessionId: string,
   code: string,

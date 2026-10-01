@@ -17,7 +17,7 @@ export interface ClaimPass {
 }
 
 /** Seconds after payment during which an accidental tap can be cancelled. */
-export const CANCEL_WINDOW_SECONDS = 120;
+export const CANCEL_WINDOW_SECONDS = 60;
 
 /** Minutes the pass stays valid for staff redemption. */
 export const CLAIM_WINDOW_MINUTES = 30;
