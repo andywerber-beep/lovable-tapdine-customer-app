@@ -73,12 +73,13 @@ function BackLink() {
   );
 }
 
-function VenueError({ error }: { error: Error }) {
+function VenueError({ error }: { error: unknown }) {
+  const message = error instanceof Error ? error.message : String(error);
   return (
     <Shell>
       <BackLink />
       <h1 className="mt-8 font-display text-2xl font-semibold text-ember">Lookbook unavailable</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{message}</p>
     </Shell>
   );
 }
@@ -101,6 +102,7 @@ function VenuePage() {
   const offers = activeOffers(venue);
   const [pass, setPass] = useState<ClaimPass | null>(null);
   const [pendingOffer, setPendingOffer] = useState<string | null>(null);
+  const [activeCard, setActiveCard] = useState(0);
 
   // Returning from the Stripe payment page: reopen the pass that was paid for.
   useEffect(() => {
@@ -193,64 +195,90 @@ function VenuePage() {
             No flash offers posted yet. Keep this venue on your radar.
           </p>
         ) : (
-          <ul className="mt-5 space-y-4">
-            {offers.map((offer) => (
-              <li
-                key={offer.id}
-                className="overflow-hidden rounded-3xl border border-primary/15 bg-surface"
-                style={{ boxShadow: "var(--shadow-lift)" }}
-              >
-                {offer.image_url && (
-                  <img
-                    src={offer.image_url}
-                    alt={offer.title}
-                    loading="lazy"
-                    width={1200}
-                    height={720}
-                    className="h-44 w-full object-cover"
-                  />
-                )}
-                <div className="p-5">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1.5 text-xs font-extrabold text-gold-foreground">
-                    <Clock3 className="size-3" /> {offer.discount_type || "Live now"}
-                  </span>
-                  <div className="mt-3 flex items-start justify-between gap-4">
-                    <h3 className="font-display text-xl font-bold">{offer.title}</h3>
-                    {formatPrice(offer.discount_price) && (
-                      <span className="shrink-0 font-display text-xl font-extrabold text-primary">
-                        {formatPrice(offer.discount_price)}
-                      </span>
-                    )}
-                  </div>
-                  {offer.description && (
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                      {offer.description}
-                    </p>
+          <>
+            <ul
+              onScroll={(event) => {
+                const el = event.currentTarget;
+                const index = Math.round(el.scrollLeft / Math.max(el.clientWidth, 1));
+                setActiveCard(Math.min(index, offers.length - 1));
+              }}
+              className="-mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {offers.map((offer) => (
+                <li
+                  key={offer.id}
+                  className="w-[85%] shrink-0 snap-center overflow-hidden rounded-3xl border border-primary/15 bg-surface sm:w-[88%]"
+                  style={{ boxShadow: "var(--shadow-lift)" }}
+                >
+                  {offer.image_url && (
+                    <img
+                      src={offer.image_url}
+                      alt={offer.title}
+                      loading="lazy"
+                      width={1200}
+                      height={720}
+                      className="aspect-[16/9] w-full object-cover"
+                    />
                   )}
-
-                  <button
-                    type="button"
-                    onClick={() => void claimOffer(offer)}
-                    disabled={pendingOffer !== null}
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold text-primary-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
-                  >
-                    {pendingOffer === String(offer.id) ? (
-                      <Loader2 className="size-5 animate-spin" />
-                    ) : (
-                      <Wallet className="size-5" />
+                  <div className="p-5">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1.5 text-xs font-extrabold text-gold-foreground">
+                      <Clock3 className="size-3" /> {offer.discount_type || "Live now"}
+                    </span>
+                    <div className="mt-3 flex items-start justify-between gap-4">
+                      <h3 className="font-display text-xl font-bold">{offer.title}</h3>
+                      {formatPrice(offer.discount_price) && (
+                        <span className="shrink-0 font-display text-xl font-extrabold text-primary">
+                          {formatPrice(offer.discount_price)}
+                        </span>
+                      )}
+                    </div>
+                    {offer.description && (
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        {offer.description}
+                      </p>
                     )}
-                    {formatPrice(offer.discount_price)
-                      ? `Tap & pay ${formatPrice(offer.discount_price)}`
-                      : "Claim this deal"}
-                  </button>
-                  <p className="mt-2 text-center text-xs text-muted-foreground">
-                    Pay with Apple Pay, Google Pay or card, then show your pass to staff.
-                  </p>
-                </div>
-              </li>
-            ))}
 
-          </ul>
+                    <button
+                      type="button"
+                      onClick={() => void claimOffer(offer)}
+                      disabled={pendingOffer !== null}
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 font-display text-base font-extrabold text-primary-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
+                    >
+                      {pendingOffer === String(offer.id) ? (
+                        <Loader2 className="size-5 animate-spin" />
+                      ) : (
+                        <Wallet className="size-5" />
+                      )}
+                      {formatPrice(offer.discount_price)
+                        ? `Tap & pay ${formatPrice(offer.discount_price)}`
+                        : "Claim this deal"}
+                    </button>
+                    <p className="mt-2 text-center text-xs text-muted-foreground">
+                      Pay with Apple Pay, Google Pay or card, then show your pass to staff.
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {offers.length > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  {offers.map((offer, index) => (
+                    <span
+                      key={offer.id}
+                      className={`h-2 rounded-full transition-all ${
+                        index === activeCard ? "w-5 bg-primary" : "w-2 bg-primary/25"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Swipe · {activeCard + 1} of {offers.length}
+                </span>
+              </div>
+            )}
+          </>
         )}
       </section>
 

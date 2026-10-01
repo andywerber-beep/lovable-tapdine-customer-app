@@ -5,7 +5,6 @@ import { Compass, Loader2, Search } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 
 import { InstallButton } from "@/components/tapdine/InstallButton";
-import { ProximityBanner } from "@/components/tapdine/ProximityBanner";
 import { TapDineBrand } from "@/components/tapdine/TapDineBrand";
 import { VenueSheet } from "@/components/tapdine/VenueSheet";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -46,12 +45,13 @@ export const Route = createFileRoute("/")({
   errorComponent: RadarError,
 });
 
-function RadarError({ error }: { error: Error }) {
+function RadarError({ error }: { error: unknown }) {
+  const message = error instanceof Error ? error.message : String(error);
   return (
     <main className="grid min-h-screen place-items-center bg-background px-6 text-center">
       <div className="max-w-sm">
         <h1 className="font-display text-2xl font-semibold text-ember">Radar offline</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{message}</p>
       </div>
     </main>
   );
@@ -76,7 +76,7 @@ function RadarPage() {
   const [recenterTrigger, setRecenterTrigger] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const { userLocation, denied, proximityVenue, clearProximityAlert } = useGeolocation(data.venues);
+  const { userLocation, denied } = useGeolocation(data.venues);
 
   const filtered = useMemo(() => {
     // Only venues with at least one live offer appear on the radar.
@@ -147,17 +147,7 @@ function RadarPage() {
       />
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        {proximityVenue ? (
-          <ProximityBanner
-            venue={proximityVenue}
-            onClose={clearProximityAlert}
-            onOpen={(venue) => {
-              setSelectedVenue(venue);
-              clearProximityAlert();
-            }}
-          />
-        ) : (
-          <div className="pointer-events-auto mx-auto max-w-xl space-y-3">
+        <div className="pointer-events-auto mx-auto max-w-xl space-y-3">
             <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface/95 px-4 py-2 shadow-sm backdrop-blur-xl">
               <TapDineBrand />
               {showingDemo && <span className="rounded-full bg-gold px-3 py-1 text-[11px] font-extrabold text-gold-foreground">DEMO MAP</span>}
@@ -185,8 +175,7 @@ function RadarPage() {
                 <Compass className="size-5" />
               </button>
             </form>
-          </div>
-        )}
+        </div>
       </header>
 
       {!selectedVenue && (
