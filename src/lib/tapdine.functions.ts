@@ -86,3 +86,15 @@ export const confirmPaidClaim = createServerFn({ method: "POST" })
     const { recordPaidClaim } = await import("./checkout.server");
     return { logged: await recordPaidClaim(data.sessionId, data.code) };
   });
+
+/** Cancels a paid claim within 2 minutes of payment and refunds it in full. */
+export const cancelPaidClaim = createServerFn({ method: "POST" })
+  .inputValidator((input: { sessionId: string; code: string }) => ({
+    sessionId: String(input.sessionId).slice(0, 200),
+    code: String(input.code).slice(0, 40),
+  }))
+  .handler(async ({ data }) => {
+    if (!data.sessionId.startsWith("cs_")) return { ok: false, reason: "Invalid payment." };
+    const { refundPaidClaim } = await import("./checkout.server");
+    return refundPaidClaim(data.sessionId, data.code);
+  });

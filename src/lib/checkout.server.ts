@@ -202,3 +202,60 @@ export async function recordPaidClaim(sessionId: string, code: string): Promise<
   if (error) console.error("TapDine transaction log failed:", error.message);
   return !error;
 }
+
+/** Seconds after payment during which a customer may cancel for a full refund. */
+export const CANCEL_WINDOW_SECONDS = 120;
+
+/** Refunds a paid claim if still inside the 2-minute window (checked against Stripe's own payment time). */
+export async function refundPaidClaim(
+  sessionId: string,
+  code: string,
+): Promise<{ ok: boolean; reason?: string }> {
+  const secret = process.env["STRIPE_SECRET_KEY"];
+  if (!secret) return { ok: false, reason: "Card payments are not switched on." };
+  const auth = { Authorization: `Bearer ${secret}` };
+
+  const res = await fetch(
+    `${STRIPE_API}/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=payment_intent`,
+    { headers: auth },
+  );
+  if (!res.ok) return { ok: false, reason: "Payment not found." };
+  const session = (await res.json()) as {
+    payment_status?: string;
+    metadata?: Record<string, string>;
+    payment_intent?: { id: string; created: number; transfer_data?: unknown } | null;
+  };
+  if (session.metadata?.["claim_code"] !== code || session.payment_status !== "paid" || !session.payment_intent) {
+    return { ok: false, reason: "This pass can't be cancelled." };
+  }
+  const pi = session.payment_intent;
+  // Small grace for network delay.
+  if (Date.now() / 1000 - pi.created > CANCEL_WINDOW_SECONDS + 15) {
+    return { ok: false, reason: "The 2-minute cancellation window has closed." };
+  }
+
+  const params: Record<string, string> = { payment_intent: pi.id };
+  if (pi.transfer_data) {
+    params["reverse_transfer"] = "true";
+    params["refund_application_fee"] = "true";
+  }
+  const refund = await fetch(`${STRIPE_API}/refunds`, {
+    method: "POST",
+    headers: { ...auth, "Content-Type": "application/x-www-form-urlencoded" },
+    body: form(params),
+  });
+  if (!refund.ok) {
+    const payload = (await refund.json().catch(() => ({}))) as { error?: { message?: string } };
+    return { ok: false, reason: payload.error?.message ?? "Refund could not be processed." };
+  }
+
+  const db = adminDb();
+  if (db) {
+    const { error } = await db
+      .from("transactions")
+      .update({ status: "refunded" })
+      .eq("stripe_session_id", sessionId);
+    if (error) console.error("TapDine refund log failed:", error.message);
+  }
+  return { ok: true };
+}

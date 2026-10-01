@@ -10,7 +10,14 @@ export interface ClaimPass {
   paidAt: number;
   /** Test run (no real card charged) — shown clearly on the pass. */
   demo: boolean;
+  /** Stripe Checkout session, needed to cancel within the 2-minute window. */
+  sessionId?: string;
+  /** Set once the customer cancels and is refunded. */
+  cancelled?: boolean;
 }
+
+/** Seconds after payment during which an accidental tap can be cancelled. */
+export const CANCEL_WINDOW_SECONDS = 120;
 
 /** Minutes the pass stays valid for staff redemption. */
 export const CLAIM_WINDOW_MINUTES = 30;

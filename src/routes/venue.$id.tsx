@@ -108,9 +108,14 @@ function VenuePage() {
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get("pass");
     if (!code) return;
-    const saved = findPass(code);
-    if (saved) setPass(saved);
     const sessionId = new URLSearchParams(window.location.search).get("session_id");
+    const saved = findPass(code);
+    if (saved) {
+      // Payment just completed: start the timers now and remember the session for cancelling.
+      const paid = sessionId ? { ...saved, sessionId, paidAt: Date.now() } : saved;
+      savePass(paid);
+      setPass(paid);
+    }
     if (sessionId) void confirmPaidClaim({ data: { sessionId, code } }).catch(() => undefined);
     window.history.replaceState(null, "", window.location.pathname);
   }, []);
@@ -282,7 +287,7 @@ function VenuePage() {
         )}
       </section>
 
-      {pass && <ClaimPassCard pass={pass} onClose={() => setPass(null)} />}
+      {pass && <ClaimPassCard pass={pass} onClose={() => setPass(null)} onChange={setPass} />}
     </Shell>
   );
 }
