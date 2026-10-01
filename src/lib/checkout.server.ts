@@ -259,3 +259,20 @@ export async function refundPaidClaim(
   }
   return { ok: true };
 }
+
+/** Reads whether venue staff have marked a paid claim as served. */
+export async function fetchClaimStatus(sessionId: string, code: string) {
+  const db = adminDb();
+  const { data } = await db
+    .from("transactions")
+    .select("status, redeemed, redeemed_at")
+    .eq("stripe_session_id", sessionId)
+    .eq("claim_code", code)
+    .maybeSingle();
+  const row = data as { status?: string; redeemed?: boolean; redeemed_at?: string | null } | null;
+  return {
+    redeemed: !!row?.redeemed,
+    redeemedAt: row?.redeemed_at ?? null,
+    refunded: row?.status === "refunded",
+  };
+}
