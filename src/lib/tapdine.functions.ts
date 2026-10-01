@@ -98,3 +98,15 @@ export const cancelPaidClaim = createServerFn({ method: "POST" })
     const { refundPaidClaim } = await import("./checkout.server");
     return refundPaidClaim(data.sessionId, data.code);
   });
+
+/** Polled by the claim pass so the phone reacts when staff mark the order served. */
+export const getClaimStatus = createServerFn({ method: "POST" })
+  .inputValidator((input: { sessionId: string; code: string }) => ({
+    sessionId: String(input.sessionId).slice(0, 200),
+    code: String(input.code).slice(0, 40),
+  }))
+  .handler(async ({ data }) => {
+    if (!data.sessionId.startsWith("cs_")) return { redeemed: false, redeemedAt: null, refunded: false };
+    const { fetchClaimStatus } = await import("./checkout.server");
+    return fetchClaimStatus(data.sessionId, data.code);
+  });

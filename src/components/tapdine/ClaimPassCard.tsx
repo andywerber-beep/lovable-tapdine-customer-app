@@ -10,7 +10,7 @@ import {
   savePass,
   type ClaimPass,
 } from "@/lib/claim-pass";
-import { cancelPaidClaim } from "@/lib/tapdine.functions";
+import { cancelPaidClaim, getClaimStatus } from "@/lib/tapdine.functions";
 import { formatPrice } from "@/lib/tapdine-types";
 
 function useCountdown(target: number) {
@@ -36,7 +36,38 @@ export function ClaimPassCard({
   const remaining = useCountdown(expiresAt(pass));
   const cancelLeft = useCountdown(pass.paidAt + CANCEL_WINDOW_SECONDS * 1000);
   const [cancelling, setCancelling] = useState(false);
-  const canCancel = !pass.cancelled && cancelLeft > 0;
+  const served = !!pass.servedAt;
+  const canCancel = !pass.cancelled && !served && cancelLeft > 0;
+
+  // Poll the venue's ticket board status so the phone reacts the moment staff mark it served.
+  useEffect(() => {
+    if (pass.demo || !pass.sessionId || pass.cancelled || served) return;
+    let stopped = false;
+    const check = async () => {
+      try {
+        const status = await getClaimStatus({ data: { sessionId: pass.sessionId!, code: pass.code } });
+        if (stopped) return;
+        if (status.redeemed) {
+          const next = { ...pass, servedAt: status.redeemedAt ? Date.parse(status.redeemedAt) : Date.now() };
+          savePass(next);
+          onChange?.(next);
+          toast.success("Order served — enjoy!");
+        } else if (status.refunded) {
+          const next = { ...pass, cancelled: true };
+          savePass(next);
+          onChange?.(next);
+        }
+      } catch {
+        /* try again next tick */
+      }
+    };
+    void check();
+    const id = window.setInterval(check, 5000);
+    return () => {
+      stopped = true;
+      window.clearInterval(id);
+    };
+  }, [pass, served, onChange]);
   const cancelSecs = Math.ceil(cancelLeft / 1000);
 
   const cancel = async () => {
@@ -60,7 +91,7 @@ export function ClaimPassCard({
 
   const minutes = Math.floor(remaining / 60000);
   const seconds = Math.floor((remaining % 60000) / 1000);
-  const expired = remaining <= 0 || !!pass.cancelled;
+  const expired = !served && (remaining <= 0 || !!pass.cancelled);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/50 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-10 backdrop-blur-sm sm:items-center">
@@ -72,7 +103,7 @@ export function ClaimPassCard({
       >
         <div className="flex items-center justify-between gap-3 bg-primary px-5 py-4 text-primary-foreground">
           <span className="inline-flex items-center gap-2 text-sm font-extrabold">
-            <BadgeCheck className="size-5" /> {pass.cancelled ? "Pass cancelled" : expired ? "Pass expired" : "Paid · Pass live"}
+            <BadgeCheck className="size-5" /> {served ? "Order served" : pass.cancelled ? "Pass cancelled" : expired ? "Pass expired" : "Paid · Pass live"}
           </span>
           <button
             type="button"
@@ -94,11 +125,13 @@ export function ClaimPassCard({
 
           <div
             className={`mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-extrabold ${
-              expired ? "bg-muted text-muted-foreground" : "bg-gold text-gold-foreground"
+              served ? "bg-success text-success-foreground" : expired ? "bg-muted text-muted-foreground" : "bg-gold text-gold-foreground"
             }`}
           >
             <Clock3 className="size-4" />
-            {pass.cancelled
+            {served
+              ? `Served at ${new Date(pass.servedAt!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+              : pass.cancelled
               ? "Cancelled · refunded"
               : expired
               ? "No longer valid"
@@ -120,7 +153,7 @@ export function ClaimPassCard({
               within {cancelSecs}s.
             </p>
           ) : (
-            !pass.cancelled && (
+            !pass.cancelled && !served && (
               <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                 <Lock className="size-3.5" /> Order confirmed with venue · Non-refundable
               </p>

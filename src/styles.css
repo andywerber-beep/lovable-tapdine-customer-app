@@ -66,6 +66,8 @@
   --color-ember-foreground: var(--ember-foreground);
   --color-gold: var(--gold);
   --color-gold-foreground: var(--gold-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
   --color-live: var(--live);
@@ -121,6 +123,8 @@
   --ember-foreground: oklch(1 0 0);
   --gold: oklch(0.885 0.165 89);
   --gold-foreground: oklch(0.29 0.06 73);
+  --success: oklch(0.68 0.17 150);
+  --success-foreground: oklch(0.99 0 0);
   --live: oklch(0.69 0.14 184);
   --live-foreground: oklch(1 0 0);
   --brand-mark: oklch(0.29 0.06 73);
