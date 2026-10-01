@@ -75,7 +75,7 @@ function RadarPage() {
   const [recenterTrigger, setRecenterTrigger] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const { userLocation, denied, proximityVenue, clearProximityAlert } = useGeolocation(data.venues);
+  const { userLocation, denied } = useGeolocation(data.venues);
 
   const filtered = useMemo(() => {
     // Only venues with at least one live offer appear on the radar.
