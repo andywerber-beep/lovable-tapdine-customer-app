@@ -117,6 +117,7 @@ jobs:
           FASTLANE_SKIP_UPDATE_CHECK: "1"
           FASTLANE_HIDE_CHANGELOG: "1"
         run: |
+          export PATH="/opt/homebrew/bin:$PATH"
           export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
           fastlane ios beta
 
