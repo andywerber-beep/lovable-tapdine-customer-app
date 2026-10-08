@@ -41,6 +41,7 @@ jobs:
         run: |
           npx cap add ios
           npx cap sync ios
+          ls -la ios/App
 
       - name: Add permission texts and build number
         run: |
@@ -86,11 +87,15 @@ jobs:
           export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
           fastlane ios beta
 
-      # If the build stops early, gym keeps the complete xcodebuild transcript
-      # in its own log — print it so nothing gets swallowed.
-      - name: Print gym log on failure
+      # If the build stops early, print the tail of gym's log plus the exact
+      # error lines, so the cause is visible without flooding the console.
+      - name: Print build errors on failure
         if: failure()
-        run: cat ~/Library/Logs/gym/App-App.log || true
+        run: |
+          echo "=== Gym Log Tail (Last 150 lines) ==="
+          tail -n 150 ~/Library/Logs/gym/*.log 2>/dev/null || true
+          echo "=== Filtered Errors from Log ==="
+          grep -i -C 2 "error:" ~/Library/Logs/gym/*.log 2>/dev/null || true
 
       - name: Clean up key
         if: always()
