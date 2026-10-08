@@ -29,9 +29,6 @@ end
 
 BUNDLE_ID = "app.tapdine.diner"
 PROJECT = "ios/App/App.xcodeproj"
-# Capacitor apps use CocoaPods: the build must run against the workspace so the
-# Pods project (and its dependencies) are compiled too.
-WORKSPACE = "ios/App/App.xcworkspace"
 KEYCHAIN_PATH = File.expand_path("~/Library/Keychains/fastlane_tmp_keychain-db")
 
 platform :ios do
@@ -86,7 +83,7 @@ platform :ios do
     )
 
     ipa = build_app(
-      workspace: WORKSPACE,
+      project: PROJECT,
       scheme: "App",
       configuration: "Release",
       export_method: "app-store",
@@ -95,10 +92,7 @@ platform :ios do
       xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('BUILD_NUMBER', '1')} DEVELOPMENT_TEAM=#{team_id}",
       output_directory: "build",
       output_name: "TapDine.ipa",
-      clean: true,
-      # Empty formatter = no xcbeautify pipe, so raw xcodebuild output
-      # (including the real compile errors) goes straight to the console.
-      xcodebuild_formatter: ""
+      clean: true
     )
 
     upload_to_testflight(
