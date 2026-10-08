@@ -41,7 +41,37 @@ jobs:
         run: |
           npx cap add ios
           npx cap sync ios
-          ls -la ios/App
+          # Create a shared App scheme so headless xcodebuild sees iOS buildables.
+          SCHEME_DIR=ios/App/App.xcodeproj/xcshareddata/xcschemes
+          mkdir -p "$SCHEME_DIR"
+          cat > "$SCHEME_DIR/App.xcscheme" <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Scheme LastUpgradeVersion = "1500" version = "1.7">
+             <BuildAction parallelizeBuildables = "YES" buildImplicitDependencies = "YES">
+                <BuildActionEntries>
+                   <BuildActionEntry buildForTesting = "YES" buildForRunning = "YES" buildForProfiling = "YES" buildForArchiving = "YES" buildForAnalyzing = "YES">
+                      <BuildableReference BuildableIdentifier = "primary" BlueprintIdentifier = "504EC3031FED79650016851F" BuildableName = "App.app" BlueprintName = "App" ReferencedContainer = "container:App.xcodeproj">
+                      </BuildableReference>
+                   </BuildActionEntry>
+                </BuildActionEntries>
+             </BuildAction>
+             <TestAction buildConfiguration = "Debug" selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv = "YES">
+             </TestAction>
+             <LaunchAction buildConfiguration = "Debug" selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB" launchStyle = "0" useCustomWorkingDirectory = "NO" ignoresPersistentStateOnLaunch = "NO" debugDocumentVersioning = "YES" debugServiceExtension = "internal" allowLocationSimulation = "YES">
+                <BuildableProductRunnable runnableDebuggingMode = "0">
+                   <BuildableReference BuildableIdentifier = "primary" BlueprintIdentifier = "504EC3031FED79650016851F" BuildableName = "App.app" BlueprintName = "App" ReferencedContainer = "container:App.xcodeproj">
+                   </BuildableReference>
+                </BuildableProductRunnable>
+             </LaunchAction>
+             <ProfileAction buildConfiguration = "Release" shouldUseLaunchSchemeArgsEnv = "YES" savedToolIdentifier = "" useCustomWorkingDirectory = "NO" debugDocumentVersioning = "YES">
+             </ProfileAction>
+             <AnalyzeAction buildConfiguration = "Debug">
+             </AnalyzeAction>
+             <ArchiveAction buildConfiguration = "Release" revealArchiveInOrganizer = "YES">
+             </ArchiveAction>
+          </Scheme>
+          EOF
+          ls -la ios/App "$SCHEME_DIR"
 
       - name: Add permission texts and build number
         run: |
@@ -68,7 +98,10 @@ jobs:
           openssl pkey -in "$KEYFILE" -noout || { echo "::error::Private key is not a valid .p8 file"; exit 1; }
 
       - name: Install fastlane
-        run: brew install fastlane xcbeautify || brew upgrade fastlane xcbeautify
+        run: |
+          echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+          export PATH="/opt/homebrew/bin:$PATH"
+          brew install fastlane || brew upgrade fastlane
 
       # Signing, build, upload: see fastlane/Fastfile. Plain xcodebuild export
       # failed with "No Accounts with App Store Connect Access" because Xcode
