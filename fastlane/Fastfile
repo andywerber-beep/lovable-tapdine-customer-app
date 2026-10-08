@@ -41,7 +41,7 @@ platform :ios do
       key_filepath: ENV.fetch("ASC_KEY_PATH"),
       in_house: false
     )
-    team_id = ENV.fetch("APPLE_TEAM_ID")
+    team_id = ENV.fetch("APPLE_TEAM_ID", "").strip
 
     # Register the bundle ID if it isn't already.
     unless Spaceship::ConnectAPI::BundleId.find(BUNDLE_ID)
@@ -71,6 +71,19 @@ platform :ios do
     )
     profile_name = lane_context[SharedValues::SIGH_NAME]
 
+    # Take the team ID from the profile Apple just issued, not the GitHub
+    # secret: a mistyped secret (it once contained "|") splits gym's shell
+    # command and fails with "sh: 1: command not found" / exit 127.
+    profile = FastlaneCore::ProvisioningProfile.parse(lane_context[SharedValues::SIGH_PROFILE_PATH])
+    profile_team = Array(profile["TeamIdentifier"]).first.to_s
+    UI.user_error!("Provisioning profile has no valid TeamIdentifier") unless profile_team.match?(/\A[A-Z0-9]{10}\z/)
+    if team_id != profile_team
+      UI.important("APPLE_TEAM_ID secret does not match the Apple team on the profile; using the profile's team ID. Fix the APPLE_TEAM_ID secret in GitHub when convenient.")
+    end
+    team_id = profile_team
+    build_number = ENV.fetch("BUILD_NUMBER", "1")
+    UI.user_error!("BUILD_NUMBER must be digits") unless build_number.match?(/\A\d+\z/)
+
     update_code_signing_settings(
       path: PROJECT,
       use_automatic_signing: false,
@@ -89,7 +102,7 @@ platform :ios do
       export_method: "app-store",
       export_team_id: team_id,
       export_options: { provisioningProfiles: { BUNDLE_ID => profile_name } },
-      xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('BUILD_NUMBER', '1')} DEVELOPMENT_TEAM=#{team_id}",
+      xcargs: "CURRENT_PROJECT_VERSION=#{build_number} DEVELOPMENT_TEAM=#{team_id}",
       output_directory: "build",
       output_name: "TapDine.ipa",
       clean: true,
