@@ -16,7 +16,7 @@ GitHub repo → Settings → Secrets and variables → Actions → New repositor
 | `APP_STORE_CONNECT_ISSUER_ID` | Issuer ID (a long UUID) |
 | `APP_STORE_CONNECT_KEY_ID` | Key ID (10 characters) |
 | `APP_STORE_CONNECT_PRIVATE_KEY` | Entire contents of the `.p8` file, including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` lines |
-| `APPLE_TEAM_ID` | Team ID (10 characters) |
+| `APPLE_TEAM_ID` | Team ID (10 capital letters/digits). Optional cross-check — the build reads the real team ID from Apple's provisioning profile. |
 
 ## 3. Run a build
 GitHub → Actions → **Build iOS & upload to TestFlight** → Run workflow. It takes about 20–45 minutes because it waits for Apple to finish processing the build; when it goes green the build is ready under TestFlight in App Store Connect.
@@ -36,6 +36,6 @@ Nothing needs creating by hand except the app record and the API key.
 - The app is a hosted-webview shell loading `https://tap-dine-buddy.lovable.app`, so web publishes update the app without a new build.
 - Stripe and Google Maps are still in **test mode** — swap to live keys before App Store submission.
 - The API key **must be a Team key with the Admin role** — only Account Holder/Admin can create distribution certificates. App Manager or Developer keys will fail at the certificate step. Individual keys are not supported.
-- `APPLE_TEAM_ID` must be the Team ID of the same team the key belongs to.
+- `APPLE_TEAM_ID` is only cross-checked; the build uses the team ID from the provisioning profile Apple issues, so a typo there shows a warning instead of breaking the build.
 - "Maximum number of certificates" error: revoke unused Apple Distribution certificates at developer.apple.com → Certificates, then re-run.
 - "No suitable application records" on upload: create the TapDine app in App Store Connect with bundle ID `app.tapdine.diner` first.
