@@ -17,6 +17,16 @@
 
 default_platform(:ios)
 
+def revoke_temp_cert
+  return unless $temp_cert_id
+  cert = Spaceship::ConnectAPI::Certificate.get(certificate_id: $temp_cert_id)
+  cert&.delete!
+  UI.message("Revoked temporary distribution certificate")
+  $temp_cert_id = nil
+rescue StandardError => e
+  UI.important("Could not revoke temporary certificate: #{e.message}")
+end
+
 BUNDLE_ID = "app.tapdine.diner"
 PROJECT = "ios/App/App.xcodeproj"
 KEYCHAIN_PATH = File.expand_path("~/Library/Keychains/fastlane_tmp_keychain-db")
@@ -48,12 +58,12 @@ platform :ios do
       keychain_password: "",
       output_path: "build/certs"
     )
-    @temp_cert_id = lane_context[SharedValues::CERT_CERTIFICATE_ID]
+    $temp_cert_id = lane_context[SharedValues::CERT_CERTIFICATE_ID]
 
     get_provisioning_profile(
       api_key: api_key,
       app_identifier: BUNDLE_ID,
-      cert_id: @temp_cert_id,
+      cert_id: $temp_cert_id,
       force: true,
       output_path: "build/profiles"
     )
@@ -96,13 +106,4 @@ platform :ios do
   after_all { |_lane| revoke_temp_cert }
   error { |_lane, _exception| revoke_temp_cert }
 
-  def revoke_temp_cert
-    return unless @temp_cert_id
-    cert = Spaceship::ConnectAPI::Certificate.get(certificate_id: @temp_cert_id)
-    cert&.delete!
-    UI.message("Revoked temporary distribution certificate")
-    @temp_cert_id = nil
-  rescue StandardError => e
-    UI.important("Could not revoke temporary certificate: #{e.message}")
-  end
 end
