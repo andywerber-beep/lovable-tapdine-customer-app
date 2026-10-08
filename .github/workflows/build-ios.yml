@@ -86,6 +86,12 @@ jobs:
           export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
           fastlane ios beta
 
+      # If the build stops early, gym keeps the complete xcodebuild transcript
+      # in its own log — print it so nothing gets swallowed.
+      - name: Print gym log on failure
+        if: failure()
+        run: cat ~/Library/Logs/gym/App-App.log || true
+
       - name: Clean up key
         if: always()
         run: rm -rf "$RUNNER_TEMP/keys"
