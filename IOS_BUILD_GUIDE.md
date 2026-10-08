@@ -26,4 +26,6 @@ Each run uses the GitHub run number as the build number, so every upload is uniq
 ## Notes
 - The app is a hosted-webview shell loading `https://tap-dine-buddy.lovable.app`, so web publishes update the app without a new build.
 - Stripe and Google Maps are still in **test mode** — swap to live keys before App Store submission.
-- If signing fails, check the API key has Admin access and the bundle ID is registered in your team.
+- How signing works: the app is built unsigned, then signed during upload with Apple's cloud-managed distribution certificate. No certificates or profiles need to be created by hand.
+- If signing fails with "No Account for Team" or "cloud signing permission": the API key must be a **Team key** with **Admin** access (App Manager/Developer keys cannot use cloud signing), and `APPLE_TEAM_ID` must be the Team ID of the same team the key belongs to.
+- If upload fails with "No suitable application records": create the TapDine app in App Store Connect with bundle ID `app.tapdine.diner` first.
