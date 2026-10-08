@@ -1,0 +1,108 @@
+# TapDine iOS cloud signing + TestFlight upload (run by .github/workflows/build-ios.yml).
+#
+# Why fastlane instead of plain xcodebuild: xcodebuild's -authenticationKey*
+# flags can't do App Store export/upload on a CI machine with no Xcode
+# account signed in ("No Accounts with App Store Connect Access"). fastlane
+# uses the App Store Connect API directly to:
+#   1. create a temporary Apple Distribution certificate in a temp keychain,
+#   2. create a fresh App Store provisioning profile for app.tapdine.diner,
+#   3. build a signed IPA with manual signing,
+#   4. upload it to TestFlight via the API key,
+#   5. revoke the temporary certificate (TestFlight builds are re-signed by
+#      Apple, so revoking does not affect uploaded builds and keeps the team
+#      under Apple's distribution-certificate limit).
+#
+# Requires an App Store Connect Team API key with the Admin role
+# (only Account Holder/Admin can create distribution certificates).
+
+default_platform(:ios)
+
+BUNDLE_ID = "app.tapdine.diner"
+PROJECT = "ios/App/App.xcodeproj"
+KEYCHAIN_PATH = File.expand_path("~/Library/Keychains/fastlane_tmp_keychain-db")
+
+platform :ios do
+  lane :beta do
+    setup_ci(force: true)
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: ENV.fetch("ASC_KEY_PATH"),
+      in_house: false
+    )
+    team_id = ENV.fetch("APPLE_TEAM_ID")
+
+    # Register the bundle ID if it isn't already.
+    unless Spaceship::ConnectAPI::BundleId.find(BUNDLE_ID)
+      UI.message("Registering bundle ID #{BUNDLE_ID}")
+      Spaceship::ConnectAPI::BundleId.create(name: "TapDine", platform: "IOS", identifier: BUNDLE_ID)
+    end
+
+    get_certificates(
+      api_key: api_key,
+      development: false,
+      type: "distribution",
+      force: true,
+      keychain_path: KEYCHAIN_PATH,
+      keychain_password: "",
+      output_path: "build/certs"
+    )
+    @temp_cert_id = lane_context[SharedValues::CERT_CERTIFICATE_ID]
+
+    get_provisioning_profile(
+      api_key: api_key,
+      app_identifier: BUNDLE_ID,
+      cert_id: @temp_cert_id,
+      force: true,
+      output_path: "build/profiles"
+    )
+    profile_name = lane_context[SharedValues::SIGH_NAME]
+
+    update_code_signing_settings(
+      path: PROJECT,
+      use_automatic_signing: false,
+      targets: ["App"],
+      build_configurations: ["Release"],
+      team_id: team_id,
+      bundle_identifier: BUNDLE_ID,
+      code_sign_identity: "Apple Distribution",
+      profile_name: profile_name
+    )
+
+    ipa = build_app(
+      project: PROJECT,
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      export_team_id: team_id,
+      export_options: { provisioningProfiles: { BUNDLE_ID => profile_name } },
+      xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('BUILD_NUMBER', '1')} DEVELOPMENT_TEAM=#{team_id}",
+      output_directory: "build",
+      output_name: "TapDine.ipa",
+      clean: true
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: ipa,
+      skip_submission: true,
+      skip_waiting_for_build_processing: false,
+      wait_processing_timeout_duration: 2400
+    )
+  end
+
+  # Always revoke the temporary certificate, success or failure.
+  after_all { |_lane| revoke_temp_cert }
+  error { |_lane, _exception| revoke_temp_cert }
+
+  def revoke_temp_cert
+    return unless @temp_cert_id
+    cert = Spaceship::ConnectAPI::Certificate.get(certificate_id: @temp_cert_id)
+    cert&.delete!
+    UI.message("Revoked temporary distribution certificate")
+    @temp_cert_id = nil
+  rescue StandardError => e
+    UI.important("Could not revoke temporary certificate: #{e.message}")
+  end
+end
