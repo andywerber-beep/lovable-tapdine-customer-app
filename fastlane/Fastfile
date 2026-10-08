@@ -92,7 +92,9 @@ platform :ios do
       xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('BUILD_NUMBER', '1')} DEVELOPMENT_TEAM=#{team_id}",
       output_directory: "build",
       output_name: "TapDine.ipa",
-      clean: true
+      clean: true,
+      xcodebuild_formatter: "",
+      disable_xcpretty: true
     )
 
     upload_to_testflight(
