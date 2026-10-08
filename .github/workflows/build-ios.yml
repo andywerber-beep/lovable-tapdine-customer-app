@@ -68,7 +68,7 @@ jobs:
           openssl pkey -in "$KEYFILE" -noout || { echo "::error::Private key is not a valid .p8 file"; exit 1; }
 
       - name: Install fastlane
-        run: brew install fastlane || brew upgrade fastlane
+        run: brew install fastlane xcbeautify || brew upgrade fastlane xcbeautify
 
       # Signing, build, upload: see fastlane/Fastfile. Plain xcodebuild export
       # failed with "No Accounts with App Store Connect Access" because Xcode
