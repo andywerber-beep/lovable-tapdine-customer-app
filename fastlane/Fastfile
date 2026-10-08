@@ -49,10 +49,12 @@ platform :ios do
       Spaceship::ConnectAPI::BundleId.create(name: "TapDine", platform: "IOS", identifier: BUNDLE_ID)
     end
 
+    # No `type:` here on purpose: cert's :type only accepts macOS certificate
+    # types (mac_installer_distribution, developer_id_*). For iOS, :development
+    # => false alone means "Apple Distribution".
     get_certificates(
       api_key: api_key,
       development: false,
-      type: "distribution",
       force: true,
       keychain_path: KEYCHAIN_PATH,
       keychain_password: "",
