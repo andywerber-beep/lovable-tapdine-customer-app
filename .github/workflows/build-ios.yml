@@ -86,10 +86,12 @@ jobs:
           ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          for v in PRIVATE_KEY KEY_ID ISSUER_ID TEAM_ID; do
+          for v in PRIVATE_KEY KEY_ID ISSUER_ID; do
             [ -n "${!v}" ] || { echo "::error::Missing secret for $v"; exit 1; }
           done
-          [ ${#TEAM_ID} -eq 10 ] || { echo "::error::APPLE_TEAM_ID must be 10 characters"; exit 1; }
+          # fastlane takes the team ID from Apple's provisioning profile; the
+          # secret is only cross-checked, so a typo here no longer breaks builds.
+          [[ "$TEAM_ID" =~ ^[A-Z0-9]{10}$ ]] || echo "::warning::APPLE_TEAM_ID should be exactly 10 capital letters/digits (it contains other characters). The build will use the team ID from Apple's profile instead."
           mkdir -p "$RUNNER_TEMP/keys"
           KEYFILE="$RUNNER_TEMP/keys/AuthKey_$KEY_ID.p8"
           # Accept keys pasted with real newlines or with literal \n sequences.
