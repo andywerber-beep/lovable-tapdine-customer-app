@@ -11,3 +11,5 @@
 - [x] Save the official icon as an opaque 1024×1024 App Store asset
 - [x] Bundle the universal AppIcon catalog after Capacitor sync in CI
 - [x] Validate the icon and workflow configuration
+## Android build
+- [x] Add Android support and cloud workflow for Play bundle + test APK
