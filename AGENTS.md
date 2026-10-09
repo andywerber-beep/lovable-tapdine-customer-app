@@ -11,3 +11,4 @@
 
 - Demo customer venues live only in `src/lib/demo-venues.ts` and are returned only when no real live offers exist, keeping partner data authoritative and demo removal isolated.
 - iOS CI signing takes the Apple team ID from the provisioning profile fastlane downloads, not from the APPLE_TEAM_ID secret — a mistyped secret containing "|" once split the xcodebuild shell command (exit 127).
+- iOS CI populates the AppIcon asset catalog with the checked-in opaque App Store icon derived from the official PWA icon, using Xcode's universal iOS icon format so native builds retain the same branding.

@@ -73,6 +73,35 @@ jobs:
           EOF
           ls -la ios/App "$SCHEME_DIR"
 
+      # Xcode 15+ generates all iPhone/iPad icon sizes from this universal image.
+      # The opaque App Store copy is derived from public/icon-512.png.
+      - name: Bundle TapDine app icon
+        run: |
+          ICON_DIR=ios/App/App/Assets.xcassets/AppIcon.appiconset
+          mkdir -p "$ICON_DIR"
+          cp public/app-store-icon-1024.png "$ICON_DIR/AppIcon-512@2x.png"
+          cat > "$ICON_DIR/Contents.json" <<'EOF'
+          {
+            "images": [
+              {
+                "filename": "AppIcon-512@2x.png",
+                "idiom": "universal",
+                "platform": "ios",
+                "size": "1024x1024"
+              }
+            ],
+            "info": {
+              "author": "xcode",
+              "version": 1
+            }
+          }
+          EOF
+          # Fail early if the checked-in App Store asset has the wrong dimensions.
+          sips -g pixelWidth -g pixelHeight "$ICON_DIR/AppIcon-512@2x.png"
+          test "$(sips -g pixelWidth "$ICON_DIR/AppIcon-512@2x.png" | awk '/pixelWidth/ {print $2}')" = 1024
+          test "$(sips -g pixelHeight "$ICON_DIR/AppIcon-512@2x.png" | awk '/pixelHeight/ {print $2}')" = 1024
+          bun -e 'JSON.parse(await Bun.file(process.argv[1]).text())' "$ICON_DIR/Contents.json"
+
       - name: Add permission texts and build number
         run: |
           PLIST=ios/App/App/Info.plist
