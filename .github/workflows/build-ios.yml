@@ -76,7 +76,11 @@ jobs:
       - name: Add permission texts and build number
         run: |
           PLIST=ios/App/App/Info.plist
-          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string 'TapDine uses your location to show live food deals near you.'" "$PLIST" || true
+          # All three location keys so App Store upload doesn't trip ITMS-90683.
+          # "Add ... || true" keeps re-runs safe if the key already exists.
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string 'TapDine uses your location to discover live food offers and radar deals near you.'" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :NSLocationAlwaysAndWhenInUseUsageDescription string 'TapDine uses your location to discover live food offers and radar deals near you, even when the app is in the background so nearby venue pings reach you.'" "$PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :NSLocationAlwaysUsageDescription string 'TapDine uses your location to discover live food offers and radar deals near you, even when the app is in the background so nearby venue pings reach you.'" "$PLIST" || true
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" || true
 
       - name: Write and check App Store Connect API key
