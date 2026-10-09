@@ -8,6 +8,6 @@
 - [x] Verify phone and desktop map interactions
 
 ## iOS app icon
-- [ ] Save the official icon as an opaque 1024×1024 App Store asset
-- [ ] Bundle the universal AppIcon catalog after Capacitor sync in CI
-- [ ] Validate the icon and workflow configuration
+- [x] Save the official icon as an opaque 1024×1024 App Store asset
+- [x] Bundle the universal AppIcon catalog after Capacitor sync in CI
+- [x] Validate the icon and workflow configuration
