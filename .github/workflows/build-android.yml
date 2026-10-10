@@ -91,17 +91,60 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
-            ./gradlew bundleRelease --no-daemon \
-              -Pandroid.injected.signing.store.file="$RUNNER_TEMP/upload.jks" \
-              -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-              -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-              -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
-          else
+          # Strip whitespace / CR / trailing newlines pasted into secrets.
+          clean() { printf '%s' "$1" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          KEYSTORE_B64=$(printf '%s' "$KEYSTORE_B64" | tr -d '[:space:]')
+          KEYSTORE_PASSWORD=$(clean "$KEYSTORE_PASSWORD")
+          KEY_ALIAS=$(clean "$KEY_ALIAS")
+          KEY_PASSWORD=$(clean "$KEY_PASSWORD")
+
+          if [ -z "$KEYSTORE_B64" ]; then
             echo "::warning::No ANDROID_KEYSTORE_BASE64 secret — building an UNSIGNED .aab. Add the keystore secrets before uploading to Google Play."
             ./gradlew bundleRelease --no-daemon
+            exit 0
           fi
+
+          KS="$RUNNER_TEMP/upload.jks"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$KS"
+
+          # 1. Store password must open the keystore.
+          if ! keytool -list -keystore "$KS" -storepass "$KEYSTORE_PASSWORD" >/dev/null 2>&1; then
+            echo "::error::ANDROID_KEYSTORE_PASSWORD cannot open the keystore (or ANDROID_KEYSTORE_BASE64 is corrupted)."
+            exit 1
+          fi
+
+          # 2. Verify alias; auto-detect from the keystore if it doesn't match.
+          ALIASES=$(keytool -list -keystore "$KS" -storepass "$KEYSTORE_PASSWORD" 2>/dev/null \
+            | grep -i 'PrivateKeyEntry' | cut -d',' -f1 | sed 's/[[:space:]]*$//')
+          if [ -z "$KEY_ALIAS" ] || ! printf '%s\n' "$ALIASES" | grep -qxF "$KEY_ALIAS"; then
+            DETECTED=$(printf '%s\n' "$ALIASES" | head -n1)
+            if [ -z "$DETECTED" ]; then
+              echo "::error::No private key entry found in the keystore."; exit 1
+            fi
+            echo "::warning::ANDROID_KEY_ALIAS not found in keystore — using detected alias instead."
+            KEY_ALIAS="$DETECTED"
+          fi
+
+          # 3. Test private-key recovery (certreq needs the key itself).
+          can_recover() {
+            [ -n "$1" ] && keytool -certreq -alias "$KEY_ALIAS" -keystore "$KS" \
+              -storepass "$KEYSTORE_PASSWORD" -keypass "$1" >/dev/null 2>&1
+          }
+          if can_recover "$KEY_PASSWORD"; then
+            echo "Key password verified."
+          elif can_recover "$KEYSTORE_PASSWORD"; then
+            echo "::warning::ANDROID_KEY_PASSWORD empty or wrong — falling back to ANDROID_KEYSTORE_PASSWORD."
+            KEY_PASSWORD="$KEYSTORE_PASSWORD"
+          else
+            echo "::error::Cannot recover the private key with ANDROID_KEY_PASSWORD or ANDROID_KEYSTORE_PASSWORD."
+            exit 1
+          fi
+
+          ./gradlew bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$KS" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Collect outputs
         run: |
