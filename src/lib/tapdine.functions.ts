@@ -11,7 +11,8 @@ export const listVenues = createServerFn({ method: "GET" }).handler(async (): Pr
   try {
     const { fetchVenues } = await import("./tapdine.server");
     const venues = await fetchVenues();
-    return venues.some((venue) => activeOffers(venue).length > 0) ? venues : DEMO_VENUES;
+    // Demo venues always coexist with live partners so testers/app reviewers have offers to try.
+    return [...venues, ...DEMO_VENUES];
   } catch (error) {
     console.warn("TapDine live venues unavailable; showing removable demo fixtures.", error);
     return DEMO_VENUES;
