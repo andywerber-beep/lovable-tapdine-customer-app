@@ -27,15 +27,26 @@ function Recenter({
 }) {
   const map = useMap();
   const lastTrigger = useRef(0);
+  const hasCentred = useRef(false);
+  const latestCenter = useRef(center);
+  latestCenter.current = center;
 
+  // Centre once on the first GPS fix. Later GPS updates (frequent on Android)
+  // must NOT pan the map, or they yank it away from search results.
   useEffect(() => {
-    if (!map || !center) return;
+    if (!map || !center || hasCentred.current) return;
+    hasCentred.current = true;
     map.panTo(center);
-    if (trigger !== lastTrigger.current) {
-      lastTrigger.current = trigger;
-      map.setZoom(15);
-    }
-  }, [map, center, trigger]);
+  }, [map, center]);
+
+  // Explicit re-centre (compass / cleared search).
+  useEffect(() => {
+    const target = latestCenter.current;
+    if (!map || !target || trigger === lastTrigger.current) return;
+    lastTrigger.current = trigger;
+    map.panTo(target);
+    map.setZoom(15);
+  }, [map, trigger]);
 
   return null;
 }
